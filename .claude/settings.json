@@ -8,7 +8,10 @@
       "Bash(node scripts/test-r2.mjs)",
       "PowerShell(Get-Content \"c:\\\\Users\\\\axele\\\\Desktop\\\\Fanny\\\\fanny\\\\.env.local\" | Where-Object { $_ -match \"R2|CLOUDFLARE\" } | ForEach-Object { \\($_ -split '='\\)[0] })",
       "PowerShell(Get-Content \"c:\\\\Users\\\\axele\\\\Desktop\\\\Fanny\\\\fanny\\\\.env.local\" | ForEach-Object { \\($_ -split '='\\)[0] })",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -m 'Add Supabase auth middleware for session refresh *)",
+      "Bash(rm middleware.ts)",
+      "Bash(git commit -m 'Remove duplicate middleware.ts \\(proxy.ts already handles auth\\) *)"
     ]
   }
 }
