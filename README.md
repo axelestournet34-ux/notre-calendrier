@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Notre Calendrier ♡
 
-## Getting Started
+Application web privée pour couple — calendrier de souvenirs, photos, galerie mensuelle et bien plus.
 
-First, run the development server:
+---
+
+## Fonctionnalités
+
+| Section | Fonctionnalités |
+|---|---|
+| **Auth** | Inscription, connexion, déconnexion, gestion de session |
+| **Couple** | Création de l'espace, invitation partenaire par lien, espace 100 % privé |
+| **Dashboard** | Hero du mois, stats (jours ensemble, souvenirs, photos), raccourcis |
+| **Calendrier** | Navigation mois par mois, jours avec souvenirs mis en surbrillance |
+| **Souvenirs** | Ajout, modification, suppression, upload photos, types, notes |
+| **Galerie** | Mosaïque mensuelle, lightbox, navigation entre photos |
+| **Timeline** | Tous les souvenirs groupés par mois, ordre chronologique |
+| **Bucket list** | Idées à réaliser ensemble, statuts (à faire / en cours / réalisé) |
+| **Dates importantes** | Anniversaires, premières fois, événements récurrents, countdown |
+| **Capsules temporelles** | Messages scellés, invisibles avant la date d'ouverture |
+| **Paramètres** | Modifier profil, modifier couple, générer lien d'invitation |
+
+---
+
+## Stack
+
+- **Next.js 16** (App Router, Server Components, Server Actions)
+- **React 19** · **TypeScript strict**
+- **Tailwind CSS v4** (variables CSS, mode clair/sombre)
+- **Supabase** — Auth, PostgreSQL, Storage, RLS
+- **Zod** — validation serveur
+- **date-fns** — manipulation des dates
+- **Lucide React** — icônes
+- **Sonner** — toasts
+
+---
+
+## Démarrage rapide
+
+### 1. Cloner et installer
+
+```bash
+git clone <repo>
+cd notre-calendrier
+npm install
+```
+
+### 2. Variables d'environnement
+
+```bash
+cp .env.example .env.local
+```
+
+Remplissez `.env.local` avec vos clés Supabase :
+- **Dashboard** → **Settings** → **API**
+- Copiez `Project URL` et `anon / public key`
+
+### 3. Base de données Supabase
+
+Dans **SQL Editor** de votre projet Supabase, exécutez dans l'ordre :
+
+```
+supabase/schema.sql   → tables, types, triggers, index
+supabase/rls.sql      → Row Level Security (sécurité par couple)
+supabase/storage.sql  → buckets (memory-photos, monthly-covers, avatars)
+```
+
+### 4. Lancer en développement
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Flux d'utilisation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+/inscription        →  créer un compte
+/onboarding         →  nommer votre couple + date de début
+/dashboard          →  accueil principal
+/parametres/couple  →  générer le lien d'invitation pour votre partenaire
+/invitation/[token] →  votre partenaire rejoint l'espace
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Structure du projet
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/
+├── (auth)/               → connexion, inscription
+├── (app)/                → pages protégées (layout avec sidebar)
+│   ├── dashboard/
+│   ├── calendrier/[annee]/[mois]/
+│   ├── galerie/[annee]/[mois]/
+│   ├── souvenirs/[id]/
+│   ├── jour/[date]/
+│   ├── timeline/
+│   ├── bucket-list/
+│   ├── dates-importantes/
+│   ├── capsules/
+│   └── parametres/profil|couple/
+└── onboarding/           → création couple (hors layout app)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+components/
+├── ui/                   → Button, Card, Input
+├── layout/               → Sidebar, Header, NavMobile
+└── shared/               → composants réutilisables
 
-## Deploy on Vercel
+features/                 → Server Actions + composants client par domaine
+├── auth/
+├── couple/
+├── memories/
+├── bucket-list/
+├── dates-importantes/
+├── capsules/
+├── gallery/
+└── parametres/
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+lib/supabase/
+├── client.ts             → client navigateur
+└── server.ts             → client serveur (cookies SSR)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+supabase/
+├── schema.sql            → schéma complet
+├── rls.sql               → policies RLS
+└── storage.sql           → buckets + policies Storage
+
+types/
+├── database.types.ts     → types générés Supabase
+└── app.types.ts          → types métier
+```
+
+---
+
+## Sécurité
+
+- Toutes les tables protégées par **Row Level Security (RLS)**
+- Chaque utilisateur ne voit que les données de **son couple**
+- Photos dans des buckets **privés** avec URLs signées (1 h)
+- Capsules temporelles **invisibles** avant leur date d'ouverture
+- Validation **Zod** sur toutes les Server Actions
+
+---
+
+## Variables d'environnement
+
+| Variable | Description | Requis |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL de votre projet Supabase | ✅ |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clé publique anon | ✅ |
+| `NEXT_PUBLIC_APP_URL` | URL de l'app (liens d'invitation) | ✅ prod |
+
+---
+
+Fait avec ♡ pour Fanny.
