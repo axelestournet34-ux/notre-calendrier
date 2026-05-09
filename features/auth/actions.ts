@@ -64,7 +64,7 @@ export async function sInscrire(_: unknown, formData: FormData) {
     if (error.code === 'user_already_exists') {
       return { error: 'Un compte existe déjà avec cet email.' }
     }
-    return { error: 'Erreur lors de la création du compte.' }
+    return { error: `Erreur Supabase : ${error.message} (${error.code ?? 'no code'})` }
   }
 
   if (data.user && !data.session) {
