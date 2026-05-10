@@ -29,3 +29,11 @@ export async function getR2Url(path: string, expiresIn = 3600): Promise<string> 
 export async function deleteFromR2(path: string): Promise<void> {
   await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: path })).catch(() => {})
 }
+
+export async function getPresignedUploadUrl(path: string, contentType: string): Promise<string> {
+  return getSignedUrl(
+    r2,
+    new PutObjectCommand({ Bucket: BUCKET, Key: path, ContentType: contentType }),
+    { expiresIn: 3600 }
+  )
+}

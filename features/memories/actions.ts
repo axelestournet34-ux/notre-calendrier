@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { uploadToR2, deleteFromR2 } from '@/lib/r2'
+import { uploadToR2, deleteFromR2, getPresignedUploadUrl } from '@/lib/r2'
 
 const souvenirSchema = z.object({
   titre:       z.string().min(1, 'Titre requis').max(200),
@@ -15,6 +15,21 @@ const souvenirSchema = z.object({
   citation:    z.string().max(500).optional(),
   chanson_url: z.string().url('URL invalide').max(500).optional().or(z.literal('')),
 })
+
+export async function obtenirUrlUpload(nomFichier: string, contentType: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non connecté' as const }
+
+  const { data: memberRow } = await supabase
+    .from('couple_members').select('couple_id').eq('user_id', user.id).single()
+  if (!memberRow) return { error: 'Couple introuvable' as const }
+
+  const ext = nomFichier.split('.').pop() ?? 'bin'
+  const chemin = `${memberRow.couple_id}/${crypto.randomUUID()}.${ext}`
+  const url = await getPresignedUploadUrl(chemin, contentType)
+  return { url, chemin }
+}
 
 export async function ajouterSouvenir(_: unknown, formData: FormData) {
   const donnees = souvenirSchema.safeParse({
@@ -57,30 +72,18 @@ export async function ajouterSouvenir(_: unknown, formData: FormData) {
 
   if (erreurMemory || !memory) return { error: 'Erreur lors de l\'ajout du souvenir.' }
 
-  // Upload des médias vers R2
-  const medias = formData.getAll('medias') as File[]
-  const mediasValides = medias.filter(f => f.size > 0)
+  // Enregistrement des chemins uploadés directement vers R2 depuis le client
+  const chemins = formData.getAll('chemin') as string[]
+  const mediaTypes = formData.getAll('mediaType') as string[]
 
-  for (let i = 0; i < mediasValides.length; i++) {
-    const media = mediasValides[i]
-    const ext = media.name.split('.').pop() ?? 'jpg'
-    const chemin = `${memberRow.couple_id}/${memory.id}/${Date.now()}-${i}.${ext}`
-
-    const estVideo = media.type.startsWith('video/')
-    const estAudio = media.type.startsWith('audio/')
-    const mediaType = estVideo ? 'video' : estAudio ? 'audio' : 'photo'
-
-    try {
-      await uploadToR2(chemin, media)
-      await supabase.from('memory_photos').insert({
-        memory_id: memory.id,
-        storage_path: chemin,
-        sort_order: i,
-        media_type: mediaType,
-      })
-    } catch {
-      // on continue si un fichier échoue
-    }
+  for (let i = 0; i < chemins.length; i++) {
+    if (!chemins[i]) continue
+    await supabase.from('memory_photos').insert({
+      memory_id: memory.id,
+      storage_path: chemins[i],
+      sort_order: i,
+      media_type: (['photo', 'video', 'audio'].includes(mediaTypes[i]) ? mediaTypes[i] : 'photo') as 'photo' | 'video' | 'audio',
+    })
   }
 
   await supabase.from('activity_logs').insert({

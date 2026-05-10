@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { format } from 'date-fns'
 import { ImagePlus, X, Film } from 'lucide-react'
-import { ajouterSouvenir } from '@/features/memories/actions'
+import { ajouterSouvenir, obtenirUrlUpload } from '@/features/memories/actions'
 import { Header } from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,13 +52,31 @@ export default function NouveauSouvenirPage() {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setErreur(null)
-
-    const formData = new FormData(e.currentTarget)
-    formData.delete('medias')
-    fichiers.forEach(({ file }) => formData.append('medias', file))
-    if (audioFile) formData.append('medias', audioFile)
+    const form = e.currentTarget
 
     startTransition(async () => {
+      const formData = new FormData(form)
+      formData.delete('medias')
+
+      const tousLesFichiers: { file: File; estVideo: boolean; estAudio: boolean }[] = [
+        ...fichiers.map(f => ({ file: f.file, estVideo: f.estVideo, estAudio: false })),
+        ...(audioFile ? [{ file: audioFile, estVideo: false, estAudio: true }] : []),
+      ]
+
+      for (const { file, estVideo, estAudio } of tousLesFichiers) {
+        const mediaType = estVideo ? 'video' : estAudio ? 'audio' : 'photo'
+        const res = await obtenirUrlUpload(file.name, file.type)
+        if ('error' in res) { setErreur(res.error ?? 'Erreur upload'); return }
+        try {
+          await fetch(res.url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+          formData.append('chemin', res.chemin)
+          formData.append('mediaType', mediaType)
+        } catch {
+          setErreur('Erreur lors de l\'upload d\'un fichier.')
+          return
+        }
+      }
+
       const result = await ajouterSouvenir(null, formData)
       if (result?.error) setErreur(result.error)
     })
