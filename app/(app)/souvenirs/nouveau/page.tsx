@@ -38,7 +38,7 @@ export default function NouveauSouvenirPage() {
       url: URL.createObjectURL(file),
       estVideo: file.type.startsWith('video/'),
     }))
-    setFichiers((prev) => [...prev, ...nouveaux].slice(0, 10))
+    setFichiers((prev) => [...prev, ...nouveaux].slice(0, 50))
     e.target.value = ''
   }
 
@@ -165,7 +165,7 @@ export default function NouveauSouvenirPage() {
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-text">Photos & vidéos</label>
               {fichiers.length > 0 && (
-                <span className="text-xs text-text-muted">{fichiers.length} / 10</span>
+                <span className="text-xs text-text-muted">{fichiers.length} / 50</span>
               )}
             </div>
 
@@ -196,7 +196,7 @@ export default function NouveauSouvenirPage() {
               </div>
             )}
 
-            {fichiers.length < 10 && (
+            {fichiers.length < 50 && (
               <button
                 type="button"
                 onClick={() => inputRef.current?.click()}

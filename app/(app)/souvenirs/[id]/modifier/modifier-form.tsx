@@ -50,7 +50,7 @@ export function ModifierForm({ souvenir, photos: photosInitiales }: Props) {
       previewUrl: URL.createObjectURL(file),
       estVideo: file.type.startsWith('video/'),
     }))
-    setNouveauxFichiers(prev => [...prev, ...nouveaux].slice(0, 10 - photosExistantes.length))
+    setNouveauxFichiers(prev => [...prev, ...nouveaux].slice(0, 50 - photosExistantes.length))
     e.target.value = ''
   }
 
@@ -170,7 +170,7 @@ export function ModifierForm({ souvenir, photos: photosInitiales }: Props) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-text">Photos & vidéos</label>
-          {totalPhotos > 0 && <span className="text-xs text-text-muted">{totalPhotos} / 10</span>}
+          {totalPhotos > 0 && <span className="text-xs text-text-muted">{totalPhotos} / 50</span>}
         </div>
 
         {(photosExistantes.length > 0 || nouveauxFichiers.length > 0) && (
@@ -217,7 +217,7 @@ export function ModifierForm({ souvenir, photos: photosInitiales }: Props) {
           </div>
         )}
 
-        {totalPhotos < 10 && (
+        {totalPhotos < 50 && (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
