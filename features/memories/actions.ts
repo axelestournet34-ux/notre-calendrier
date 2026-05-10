@@ -100,18 +100,24 @@ export async function ajouterSouvenir(_: unknown, formData: FormData) {
 }
 
 const modifierSouvenirSchema = z.object({
-  titre: z.string().min(1, 'Titre requis').max(200),
-  date:  z.string().min(1, 'Date requise'),
-  type:  z.enum(['sortie', 'voyage', 'repas', 'anniversaire', 'quotidien', 'premiere_fois', 'autre']),
-  note:  z.string().max(2000).optional(),
+  titre:       z.string().min(1, 'Titre requis').max(200),
+  date:        z.string().min(1, 'Date requise'),
+  type:        z.enum(['sortie', 'voyage', 'repas', 'anniversaire', 'quotidien', 'premiere_fois', 'autre']),
+  note:        z.string().max(2000).optional(),
+  lieu:        z.string().max(150).optional(),
+  citation:    z.string().max(500).optional(),
+  chanson_url: z.string().url('URL invalide').max(500).optional().or(z.literal('')),
 })
 
 export async function modifierSouvenir(memoryId: string, _: unknown, formData: FormData) {
   const donnees = modifierSouvenirSchema.safeParse({
-    titre: formData.get('titre'),
-    date:  formData.get('date'),
-    type:  formData.get('type'),
-    note:  formData.get('note') || undefined,
+    titre:       formData.get('titre'),
+    date:        formData.get('date'),
+    type:        formData.get('type'),
+    note:        formData.get('note') || undefined,
+    lieu:        formData.get('lieu') || undefined,
+    citation:    formData.get('citation') || undefined,
+    chanson_url: formData.get('chanson_url') || undefined,
   })
 
   if (!donnees.success) return { error: donnees.error.issues[0]?.message ?? 'Données invalides' }
@@ -122,15 +128,48 @@ export async function modifierSouvenir(memoryId: string, _: unknown, formData: F
 
   const { error } = await supabase
     .from('memories')
-    .update({ date: donnees.data.date, title: donnees.data.titre, note: donnees.data.note ?? null, type: donnees.data.type })
+    .update({
+      date:        donnees.data.date,
+      title:       donnees.data.titre,
+      note:        donnees.data.note ?? null,
+      type:        donnees.data.type,
+      lieu:        donnees.data.lieu ?? null,
+      citation:    donnees.data.citation ?? null,
+      chanson_url: donnees.data.chanson_url || null,
+    })
     .eq('id', memoryId).eq('author_id', user.id)
 
   if (error) return { error: 'Erreur lors de la modification.' }
+
+  // Nouvelles photos uploadées directement vers R2
+  const chemins = formData.getAll('chemin') as string[]
+  const mediaTypes = formData.getAll('mediaType') as string[]
+  const nbExistantes = Number(formData.get('nbPhotosExistantes') ?? 0)
+
+  for (let i = 0; i < chemins.length; i++) {
+    if (!chemins[i]) continue
+    await supabase.from('memory_photos').insert({
+      memory_id:    memoryId,
+      storage_path: chemins[i],
+      sort_order:   nbExistantes + i,
+      media_type:   (['photo', 'video', 'audio'].includes(mediaTypes[i]) ? mediaTypes[i] : 'photo') as 'photo' | 'video' | 'audio',
+    })
+  }
 
   revalidatePath(`/souvenirs/${memoryId}`)
   revalidatePath('/dashboard')
   revalidatePath('/timeline')
   redirect(`/souvenirs/${memoryId}`)
+}
+
+export async function supprimerPhotoSouvenir(photoId: string, storagePath: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non connecté' }
+
+  await deleteFromR2(storagePath).catch(() => {})
+  await supabase.from('memory_photos').delete().eq('id', photoId)
+  return null
 }
 
 export async function supprimerSouvenir(memoryId: string) {

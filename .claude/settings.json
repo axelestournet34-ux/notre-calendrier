@@ -11,7 +11,10 @@
       "Bash(git commit -m ' *)",
       "Bash(git commit -m 'Add Supabase auth middleware for session refresh *)",
       "Bash(rm middleware.ts)",
-      "Bash(git commit -m 'Remove duplicate middleware.ts \\(proxy.ts already handles auth\\) *)"
+      "Bash(git commit -m 'Remove duplicate middleware.ts \\(proxy.ts already handles auth\\) *)",
+      "Bash(git commit -m 'Show exact Supabase error on signup for debugging *)",
+      "Bash(git commit -m 'Upload fichiers directement vers R2 depuis le navigateur \\(contourne limite 4.5MB Vercel\\) *)",
+      "Bash(git commit -m 'Refaire page modifier souvenir : tous les champs + ajout/suppression photos *)"
     ]
   }
 }
