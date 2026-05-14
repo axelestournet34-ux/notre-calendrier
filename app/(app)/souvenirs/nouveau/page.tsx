@@ -65,14 +65,19 @@ export default function NouveauSouvenirPage() {
 
       for (const { file, estVideo, estAudio } of tousLesFichiers) {
         const mediaType = estVideo ? 'video' : estAudio ? 'audio' : 'photo'
-        const res = await obtenirUrlUpload(file.name, file.type)
+        const contentType = file.type || (estVideo ? 'video/mp4' : 'image/jpeg')
+        const res = await obtenirUrlUpload(file.name, contentType)
         if ('error' in res) { setErreur(res.error ?? 'Erreur upload'); return }
         try {
-          await fetch(res.url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+          const response = await fetch(res.url, { method: 'PUT', body: file, headers: { 'Content-Type': contentType } })
+          if (!response.ok) {
+            setErreur(`Erreur upload (${response.status}) — vérifie le CORS de ton bucket R2`)
+            return
+          }
           formData.append('chemin', res.chemin)
           formData.append('mediaType', mediaType)
-        } catch {
-          setErreur('Erreur lors de l\'upload d\'un fichier.')
+        } catch (err) {
+          setErreur(`Upload bloqué (CORS) — configure le CORS sur ton bucket R2 Cloudflare`)
           return
         }
       }
@@ -171,13 +176,24 @@ export default function NouveauSouvenirPage() {
 
             {fichiers.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {fichiers.map(({ url, estVideo }, i) => (
+                {fichiers.map(({ url, estVideo, file }, i) => (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-surface-raised group">
                     {estVideo ? (
                       <video src={url} className="w-full h-full object-cover" muted playsInline />
                     ) : (
-                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <img
+                        src={url} alt=""
+                        className="w-full h-full object-cover"
+                        onError={e => {
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                        }}
+                      />
                     )}
+                    <div className="hidden absolute inset-0 flex flex-col items-center justify-center gap-1 p-1">
+                      <ImagePlus size={18} className="text-text-muted" />
+                      <span className="text-[9px] text-text-muted text-center leading-tight truncate w-full px-1">{file.name}</span>
+                    </div>
                     {estVideo && (
                       <div className="absolute bottom-1 left-1 bg-black/60 rounded-md px-1.5 py-0.5 flex items-center gap-1">
                         <Film size={10} className="text-white" />
