@@ -95,9 +95,38 @@ export default function NouveauSouvenirPage() {
         ...(audioFile ? [{ file: audioFile, estVideo: false, estAudio: true }] : []),
       ]
 
-      // Ajoute les fichiers directement dans le formData (upload via serveur)
-      tousLesFichiers.forEach(({ file }) => formData.append('medias', file))
-      setUploadStatus(`Envoi de ${tousLesFichiers.length} fichier(s)…`)
+      const videos = tousLesFichiers.filter(f => f.estVideo)
+      const autresFichiers = tousLesFichiers.filter(f => !f.estVideo)
+
+      // Photos et audio → upload via serveur
+      autresFichiers.forEach(({ file }) => formData.append('medias', file))
+
+      // Vidéos → upload direct vers R2 (presigned URL)
+      for (let i = 0; i < videos.length; i++) {
+        const { file } = videos[i]
+        setUploadStatus(`Vidéo ${i + 1} / ${videos.length}…`)
+        const contentType = file.type || 'video/mp4'
+        const res = await obtenirUrlUpload(file.name, contentType)
+        if ('error' in res) { setErreur(res.error ?? 'Erreur'); setUploadStatus(null); return }
+        try {
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), 300_000)
+          const response = await fetch(res.url, {
+            method: 'PUT', body: file,
+            headers: { 'Content-Type': contentType },
+            signal: controller.signal,
+          })
+          clearTimeout(timeout)
+          if (!response.ok) { setErreur(`Erreur upload vidéo (${response.status})`); setUploadStatus(null); return }
+          formData.append('chemin', res.chemin)
+          formData.append('mediaType', 'video')
+        } catch (err: unknown) {
+          const isTimeout = err instanceof Error && err.name === 'AbortError'
+          setErreur(isTimeout ? 'Vidéo trop longue à uploader — essaie une vidéo plus courte' : 'Erreur upload vidéo')
+          setUploadStatus(null); return
+        }
+      }
+      if (videos.length > 0) setUploadStatus('Finalisation…')
 
       const result = await ajouterSouvenir(null, formData)
       setUploadStatus(null)

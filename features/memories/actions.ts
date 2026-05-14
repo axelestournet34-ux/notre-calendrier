@@ -72,34 +72,24 @@ export async function ajouterSouvenir(_: unknown, formData: FormData) {
 
   if (erreurMemory || !memory) return { error: 'Erreur lors de l\'ajout du souvenir.' }
 
-  // Upload des médias vers R2
+  // Photos/audio uploadés via le serveur
   const medias = formData.getAll('medias') as File[]
   const mediasValides = medias.filter(f => f.size > 0)
-
-  // Chemins déjà uploadés côté client (presigned URL)
-  const chemins = formData.getAll('chemin') as string[]
-  const mediaTypesChemin = formData.getAll('mediaType') as string[]
-
-  // Upload direct depuis le serveur
   for (let i = 0; i < mediasValides.length; i++) {
     const media = mediasValides[i]
     const ext = media.name.split('.').pop() ?? 'jpg'
     const chemin = `${memberRow.couple_id}/${memory.id}/${Date.now()}-${i}.${ext}`
-    const estVideo = media.type.startsWith('video/')
     const estAudio = media.type.startsWith('audio/')
-    const mediaType = estVideo ? 'video' : estAudio ? 'audio' : 'photo'
+    const mediaType = estAudio ? 'audio' : 'photo'
     try {
       await uploadToR2(chemin, media)
-      await supabase.from('memory_photos').insert({
-        memory_id: memory.id,
-        storage_path: chemin,
-        sort_order: i,
-        media_type: mediaType,
-      })
+      await supabase.from('memory_photos').insert({ memory_id: memory.id, storage_path: chemin, sort_order: i, media_type: mediaType })
     } catch { }
   }
 
-  // Chemins uploadés côté client (si presigned URL a fonctionné)
+  // Vidéos uploadées directement vers R2 depuis le client (presigned URL)
+  const chemins = formData.getAll('chemin') as string[]
+  const mediaTypesChemin = formData.getAll('mediaType') as string[]
   for (let i = 0; i < chemins.length; i++) {
     if (!chemins[i]) continue
     await supabase.from('memory_photos').insert({
