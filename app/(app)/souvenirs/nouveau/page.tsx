@@ -95,39 +95,12 @@ export default function NouveauSouvenirPage() {
         ...(audioFile ? [{ file: audioFile, estVideo: false, estAudio: true }] : []),
       ]
 
-      for (let i = 0; i < tousLesFichiers.length; i++) {
-        const { file, estVideo, estAudio } = tousLesFichiers[i]
-        setUploadStatus(`Upload ${i + 1} / ${tousLesFichiers.length}…`)
-        const mediaType = estVideo ? 'video' : estAudio ? 'audio' : 'photo'
-        const contentType = file.type || (estVideo ? 'video/mp4' : 'image/jpeg')
-        const res = await obtenirUrlUpload(file.name, contentType)
-        if ('error' in res) { setErreur(res.error ?? 'Erreur upload'); setUploadStatus(null); return }
-        try {
-          const controller = new AbortController()
-          const timeout = setTimeout(() => controller.abort(), 120_000)
-          const response = await fetch(res.url, {
-            method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': contentType },
-            signal: controller.signal,
-          })
-          clearTimeout(timeout)
-          if (!response.ok) {
-            setErreur(`Erreur upload ${response.status} — vérifie les variables R2 dans Vercel`)
-            setUploadStatus(null); return
-          }
-          formData.append('chemin', res.chemin)
-          formData.append('mediaType', mediaType)
-        } catch (err: unknown) {
-          const msg = err instanceof Error && err.name === 'AbortError'
-            ? 'Upload trop long (timeout 2 min) — fichier trop lourd ?'
-            : 'Upload bloqué — CORS ou réseau'
-          setErreur(msg); setUploadStatus(null); return
-        }
-      }
-      setUploadStatus(null)
+      // Ajoute les fichiers directement dans le formData (upload via serveur)
+      tousLesFichiers.forEach(({ file }) => formData.append('medias', file))
+      setUploadStatus(`Envoi de ${tousLesFichiers.length} fichier(s)…`)
 
       const result = await ajouterSouvenir(null, formData)
+      setUploadStatus(null)
       if (result?.error) setErreur(result.error)
     })
   }
