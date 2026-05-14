@@ -14,7 +14,7 @@ import { seDeconnecter } from '@/features/auth/actions'
 
 const navPrincipal = [
   { href: '/dashboard',         label: 'Accueil',  icon: Home },
-  { href: '/souvenirs/nouveau', label: 'Souvenir', icon: Heart },
+  { href: '/souvenirs/nouveau', label: 'Ajouter', icon: Heart },
   { href: '/timeline',          label: 'Timeline', icon: Clock },
 ]
 
