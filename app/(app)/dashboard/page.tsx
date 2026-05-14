@@ -266,27 +266,6 @@ export default async function DashboardPage() {
           )}
         </Card>
 
-        {/* Raccourcis */}
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { href: '/calendrier',        label: 'Calendrier',        emoji: '📅' },
-            { href: '/galerie',           label: 'Galerie photos',    emoji: '🖼' },
-            { href: '/bilan',             label: 'Bilan annuel',      emoji: '📊' },
-            { href: '/stats',             label: 'Nos stats',         emoji: '✨' },
-            { href: '/mots-amour',        label: 'Mots d\'amour',     emoji: '💌' },
-            { href: '/lettre',            label: 'Nos lettres',       emoji: '✉️' },
-            { href: '/lieux',             label: 'Nos lieux',         emoji: '📍' },
-            { href: '/bucket-list',       label: 'Bucket list',       emoji: '🗺' },
-            { href: '/dates-importantes', label: 'Dates importantes', emoji: '⭐' },
-          ].map(({ href, label, emoji }) => (
-            <Link key={href} href={href}>
-              <Card hover className="flex items-center gap-3">
-                <span className="text-2xl">{emoji}</span>
-                <span className="text-sm font-medium text-text">{label}</span>
-              </Card>
-            </Link>
-          ))}
-        </div>
 
       </div>
     </>
