@@ -19,7 +19,9 @@
       "Bash(git commit -m 'Navigation mobile : tiroir '\\\\''Plus'\\\\'' pour calendrier, galerie, bilan, etc. *)",
       "Bash(git commit -m 'Supprimer grille de raccourcis de l'\\\\''accueil *)",
       "Bash(git commit -m 'Meilleur gestion erreurs upload + preview formats non supportés *)",
-      "Bash(git commit -m 'Conversion automatique HEIC -> JPEG pour photos Samsung/iPhone *)"
+      "Bash(git commit -m 'Conversion automatique HEIC -> JPEG pour photos Samsung/iPhone *)",
+      "Bash(git commit -m 'Renommer onglet mobile '\\\\''Souvenir'\\\\'' -> '\\\\''Ajouter'\\\\'' *)",
+      "Bash(git commit -m 'Nouvelles fonctionnalités : polaroïd du jour, courses, quiz souvenirs, notre chanson *)"
     ]
   }
 }

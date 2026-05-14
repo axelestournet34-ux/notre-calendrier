@@ -454,6 +454,29 @@ export type Database = {
         Update: { title?: string; content?: string }
         Relationships: []
       }
+      liste_courses: {
+        Row: {
+          id: string
+          couple_id: string
+          content: string
+          done: boolean
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          couple_id: string
+          content: string
+          done?: boolean
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          content?: string
+          done?: boolean
+        }
+        Relationships: []
+      }
       activity_logs: {
         Row: {
           id: string

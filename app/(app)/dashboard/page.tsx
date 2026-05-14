@@ -3,11 +3,13 @@ import { format, addYears } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/server'
+import { getR2Url } from '@/lib/r2'
 import { Header } from '@/components/layout/header'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Heart, Calendar, Images, Plus } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { MessageDuJour } from '@/components/shared/message-du-jour'
 import { HumeurDuJour } from '@/components/shared/humeur-du-jour'
 import type { MoodType } from '@/features/humeurs/actions'
@@ -59,6 +61,25 @@ export default async function DashboardPage() {
       .order('date', { ascending: false }).limit(5)
     : { data: [] }
   ) as { data: SouvenirAnRow[] | null }
+
+  // Photo du jour
+  type SouvenirPhotoRow = { id: string; title: string; date: string; memory_photos: { storage_path: string }[] }
+  const { data: souvenirsPourPhoto } = (
+    couple ? await supabase.from('memories')
+      .select('id, title, date, memory_photos(storage_path)')
+      .eq('couple_id', couple.id)
+      .limit(50)
+    : { data: [] }
+  ) as { data: SouvenirPhotoRow[] | null }
+
+  const avecPhotos = (souvenirsPourPhoto ?? []).filter((m) => m.memory_photos.length > 0)
+  const souvenirAleatoire = avecPhotos.length > 0
+    ? avecPhotos[Math.floor(Math.random() * avecPhotos.length)]
+    : null
+  const photoAleatoirePath = souvenirAleatoire?.memory_photos[0]?.storage_path ?? null
+  const photoAleatoireUrl = photoAleatoirePath
+    ? await getR2Url(photoAleatoirePath).catch(() => null)
+    : null
 
   // Prochaine date importante
   type DateRow = { id: string; title: string; date: string; recurrent: boolean }
@@ -231,6 +252,37 @@ export default async function DashboardPage() {
               ))}
             </div>
           </Card>
+        )}
+
+        {/* Photo du jour */}
+        {couple && souvenirAleatoire && photoAleatoireUrl && (
+          <Link href={`/souvenirs/${souvenirAleatoire.id}`}>
+            <div className="flex justify-center py-2">
+              <div className={[
+                'bg-white dark:bg-neutral-800 p-3 pb-10 shadow-lg rounded-sm',
+                'w-56 cursor-pointer transition-all duration-300 hover:scale-105',
+                'rotate-[-2deg] hover:rotate-0',
+              ].join(' ')}>
+                <div className="relative aspect-square w-full overflow-hidden rounded-sm bg-surface-raised">
+                  <Image
+                    src={photoAleatoireUrl}
+                    alt={souvenirAleatoire.title}
+                    fill
+                    className="object-cover"
+                    sizes="224px"
+                  />
+                </div>
+                <div className="mt-3 text-center">
+                  <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 truncate">
+                    {souvenirAleatoire.title}
+                  </p>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                    {format(new Date(souvenirAleatoire.date), 'd MMMM yyyy', { locale: fr })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Link>
         )}
 
         {/* Derniers souvenirs */}
