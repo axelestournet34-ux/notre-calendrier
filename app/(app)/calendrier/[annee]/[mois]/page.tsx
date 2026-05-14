@@ -5,6 +5,7 @@ import { fr } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/header'
+import { CalendrierSwipe } from './calendrier-swipe'
 import { cn } from '@/utils/cn'
 
 interface Props {
@@ -84,6 +85,7 @@ export default async function CalendrierPage({ params }: Props) {
         }
       />
 
+      <CalendrierSwipe lienPrecedent={lienPrecedent} lienSuivant={lienSuivant}>
       <div className="px-4 lg:px-6 py-6 max-w-2xl mx-auto w-full space-y-4">
 
         {/* Navigation */}
@@ -183,6 +185,7 @@ export default async function CalendrierPage({ params }: Props) {
         </div>
 
       </div>
+      </CalendrierSwipe>
     </>
   )
 }
