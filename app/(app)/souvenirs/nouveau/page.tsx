@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { format } from 'date-fns'
 import { ImagePlus, X, Film, Loader2 } from 'lucide-react'
-import { ajouterSouvenir, obtenirUrlUpload } from '@/features/memories/actions'
+import { ajouterSouvenir, obtenirUrlUpload, initierUploadVideo, obtenirUrlPart, finaliserUploadVideo } from '@/features/memories/actions'
 import { Header } from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -95,38 +95,65 @@ export default function NouveauSouvenirPage() {
         ...(audioFile ? [{ file: audioFile, estVideo: false, estAudio: true }] : []),
       ]
 
-      const videos = tousLesFichiers.filter(f => f.estVideo)
-      const autresFichiers = tousLesFichiers.filter(f => !f.estVideo)
+      // Tous les fichiers uploadés directement vers R2 (bypass limite 4.5MB Vercel)
+      const TAILLE_MULTIPART = 10 * 1024 * 1024 // 10 MB
+      for (let i = 0; i < tousLesFichiers.length; i++) {
+        const { file, estVideo, estAudio } = tousLesFichiers[i]
+        const contentType = file.type || (estVideo ? 'video/mp4' : estAudio ? 'audio/webm' : 'image/jpeg')
+        const mediaType = estAudio ? 'audio' : estVideo ? 'video' : 'photo'
+        const label = `Fichier ${i + 1}/${tousLesFichiers.length}`
 
-      // Photos et audio → upload via serveur
-      autresFichiers.forEach(({ file }) => formData.append('medias', file))
+        if (estVideo && file.size > TAILLE_MULTIPART) {
+          // Multipart pour les grandes vidéos
+          const nParties = Math.ceil(file.size / TAILLE_MULTIPART)
+          setUploadStatus(`${label} — initialisation…`)
+          const init = await initierUploadVideo(file.name, contentType)
+          if ('error' in init) { setErreur(init.error ?? 'Erreur'); setUploadStatus(null); return }
 
-      // Vidéos → upload direct vers R2 (presigned URL)
-      for (let i = 0; i < videos.length; i++) {
-        const { file } = videos[i]
-        setUploadStatus(`Vidéo ${i + 1} / ${videos.length}…`)
-        const contentType = file.type || 'video/mp4'
-        const res = await obtenirUrlUpload(file.name, contentType)
-        if ('error' in res) { setErreur(res.error ?? 'Erreur'); setUploadStatus(null); return }
-        try {
-          const controller = new AbortController()
-          const timeout = setTimeout(() => controller.abort(), 300_000)
-          const response = await fetch(res.url, {
-            method: 'PUT', body: file,
-            headers: { 'Content-Type': contentType },
-            signal: controller.signal,
-          })
-          clearTimeout(timeout)
-          if (!response.ok) { setErreur(`Erreur upload vidéo (${response.status})`); setUploadStatus(null); return }
+          const { uploadId, chemin } = init
+          const parts: { ETag: string; PartNumber: number }[] = []
+          try {
+            for (let p = 0; p < nParties; p++) {
+              const start = p * TAILLE_MULTIPART
+              const chunk = file.slice(start, Math.min(start + TAILLE_MULTIPART, file.size))
+              setUploadStatus(`${label} — ${Math.round((p / nParties) * 100)}%`)
+
+              const partRes = await obtenirUrlPart(chemin, uploadId, p + 1)
+              if ('error' in partRes) throw new Error(partRes.error)
+
+              const res = await fetch(partRes.url, { method: 'PUT', body: chunk, headers: { 'Content-Type': contentType } })
+              if (!res.ok) throw new Error(`Partie ${p + 1} échouée (${res.status})`)
+              const etag = res.headers.get('ETag')
+              if (!etag) throw new Error(`ETag manquant pour la partie ${p + 1}`)
+              parts.push({ ETag: etag, PartNumber: p + 1 })
+            }
+          } catch (err: unknown) {
+            setErreur(err instanceof Error ? err.message : 'Erreur upload vidéo')
+            setUploadStatus(null); return
+          }
+
+          setUploadStatus(`${label} — finalisation…`)
+          const fin = await finaliserUploadVideo(chemin, uploadId, parts)
+          if ('error' in fin) { setErreur(fin.error ?? 'Erreur'); setUploadStatus(null); return }
+
+          formData.append('chemin', chemin)
+          formData.append('mediaType', mediaType)
+        } else {
+          // Upload simple pour photos, audio et petites vidéos
+          setUploadStatus(`${label}…`)
+          const res = await obtenirUrlUpload(file.name, contentType)
+          if ('error' in res) { setErreur(res.error ?? 'Erreur'); setUploadStatus(null); return }
+          try {
+            const response = await fetch(res.url, { method: 'PUT', body: file, headers: { 'Content-Type': contentType } })
+            if (!response.ok) { setErreur(`Erreur upload (${response.status})`); setUploadStatus(null); return }
+          } catch {
+            setErreur('Erreur réseau lors de l\'upload'); setUploadStatus(null); return
+          }
           formData.append('chemin', res.chemin)
-          formData.append('mediaType', 'video')
-        } catch (err: unknown) {
-          const isTimeout = err instanceof Error && err.name === 'AbortError'
-          setErreur(isTimeout ? 'Vidéo trop longue à uploader — essaie une vidéo plus courte' : 'Erreur upload vidéo')
-          setUploadStatus(null); return
+          formData.append('mediaType', mediaType)
         }
       }
-      if (videos.length > 0) setUploadStatus('Finalisation…')
+      if (tousLesFichiers.length > 0) setUploadStatus('Enregistrement…')
 
       const result = await ajouterSouvenir(null, formData)
       setUploadStatus(null)

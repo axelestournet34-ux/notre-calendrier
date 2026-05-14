@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { uploadToR2, deleteFromR2, getPresignedUploadUrl } from '@/lib/r2'
+import { uploadToR2, deleteFromR2, getPresignedUploadUrl, initierMultipartUpload, presignedUrlPart, completerMultipartUpload, annulerMultipartUpload } from '@/lib/r2'
 
 const souvenirSchema = z.object({
   titre:       z.string().min(1, 'Titre requis').max(200),
@@ -29,6 +29,45 @@ export async function obtenirUrlUpload(nomFichier: string, contentType: string) 
   const chemin = `${memberRow.couple_id}/${crypto.randomUUID()}.${ext}`
   const url = await getPresignedUploadUrl(chemin, contentType)
   return { url, chemin }
+}
+
+export async function initierUploadVideo(nomFichier: string, contentType: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non connecté' as const }
+
+  const { data: memberRow } = await supabase
+    .from('couple_members').select('couple_id').eq('user_id', user.id).single()
+  if (!memberRow) return { error: 'Couple introuvable' as const }
+
+  const ext = nomFichier.split('.').pop() ?? 'mp4'
+  const chemin = `${memberRow.couple_id}/${crypto.randomUUID()}.${ext}`
+  const uploadId = await initierMultipartUpload(chemin, contentType)
+  return { uploadId, chemin }
+}
+
+export async function obtenirUrlPart(chemin: string, uploadId: string, partNumber: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non connecté' as const }
+  const url = await presignedUrlPart(chemin, uploadId, partNumber)
+  return { url }
+}
+
+export async function finaliserUploadVideo(
+  chemin: string, uploadId: string,
+  parts: { ETag: string; PartNumber: number }[]
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non connecté' as const }
+  try {
+    await completerMultipartUpload(chemin, uploadId, parts)
+    return { chemin }
+  } catch {
+    await annulerMultipartUpload(chemin, uploadId)
+    return { error: 'Erreur lors de la finalisation du multipart upload' as const }
+  }
 }
 
 export async function ajouterSouvenir(_: unknown, formData: FormData) {
