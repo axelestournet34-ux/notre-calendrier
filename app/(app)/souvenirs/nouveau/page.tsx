@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { format } from 'date-fns'
-import { ImagePlus, X, Film } from 'lucide-react'
+import { ImagePlus, X, Film, Loader2 } from 'lucide-react'
 import { ajouterSouvenir, obtenirUrlUpload } from '@/features/memories/actions'
 import { Header } from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,23 @@ import { Input } from '@/components/ui/input'
 import { EnregistreurAudio } from '@/components/shared/enregistreur-audio'
 import { cn } from '@/utils/cn'
 import type { MemoryType } from '@/types/database.types'
+
+function estHeic(file: File): boolean {
+  return (
+    file.type === 'image/heic' ||
+    file.type === 'image/heif' ||
+    file.name.toLowerCase().endsWith('.heic') ||
+    file.name.toLowerCase().endsWith('.heif')
+  )
+}
+
+async function convertirHeicEnJpeg(file: File): Promise<File> {
+  const heic2any = (await import('heic2any')).default
+  const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+  const converted = Array.isArray(blob) ? blob[0] : blob
+  const nomJpeg = file.name.replace(/\.(heic|heif)$/i, '.jpg')
+  return new File([converted], nomJpeg, { type: 'image/jpeg' })
+}
 
 const TYPES: { value: MemoryType; label: string; emoji: string }[] = [
   { value: 'sortie',        label: 'Sortie',        emoji: '🎉' },
@@ -29,17 +46,31 @@ export default function NouveauSouvenirPage() {
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isConverting, setIsConverting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
-  function ajouterFichiers(e: React.ChangeEvent<HTMLInputElement>) {
-    const nouveaux = Array.from(e.target.files ?? []).map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-      estVideo: file.type.startsWith('video/'),
-    }))
-    setFichiers((prev) => [...prev, ...nouveaux].slice(0, 50))
+  async function ajouterFichiers(e: React.ChangeEvent<HTMLInputElement>) {
+    const fichiersBruts = Array.from(e.target.files ?? [])
     e.target.value = ''
+    if (!fichiersBruts.length) return
+
+    setIsConverting(true)
+    try {
+      const convertis = await Promise.all(
+        fichiersBruts.map(f => estHeic(f) ? convertirHeicEnJpeg(f) : Promise.resolve(f))
+      )
+      const nouveaux = convertis.map(file => ({
+        file,
+        url: URL.createObjectURL(file),
+        estVideo: file.type.startsWith('video/'),
+      }))
+      setFichiers(prev => [...prev, ...nouveaux].slice(0, 50))
+    } catch {
+      setErreur('Erreur lors de la conversion des photos HEIC.')
+    } finally {
+      setIsConverting(false)
+    }
   }
 
   function supprimerFichier(index: number) {
@@ -212,7 +243,14 @@ export default function NouveauSouvenirPage() {
               </div>
             )}
 
-            {fichiers.length < 50 && (
+            {isConverting && (
+              <div className="w-full flex items-center justify-center gap-2 py-4 text-sm text-text-muted">
+                <Loader2 size={16} className="animate-spin" />
+                Conversion des photos HEIC…
+              </div>
+            )}
+
+            {!isConverting && fichiers.length < 50 && (
               <button
                 type="button"
                 onClick={() => inputRef.current?.click()}
