@@ -47,6 +47,7 @@ export default function NouveauSouvenirPage() {
   const [erreur, setErreur] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isConverting, setIsConverting] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -94,24 +95,37 @@ export default function NouveauSouvenirPage() {
         ...(audioFile ? [{ file: audioFile, estVideo: false, estAudio: true }] : []),
       ]
 
-      for (const { file, estVideo, estAudio } of tousLesFichiers) {
+      for (let i = 0; i < tousLesFichiers.length; i++) {
+        const { file, estVideo, estAudio } = tousLesFichiers[i]
+        setUploadStatus(`Upload ${i + 1} / ${tousLesFichiers.length}…`)
         const mediaType = estVideo ? 'video' : estAudio ? 'audio' : 'photo'
         const contentType = file.type || (estVideo ? 'video/mp4' : 'image/jpeg')
         const res = await obtenirUrlUpload(file.name, contentType)
-        if ('error' in res) { setErreur(res.error ?? 'Erreur upload'); return }
+        if ('error' in res) { setErreur(res.error ?? 'Erreur upload'); setUploadStatus(null); return }
         try {
-          const response = await fetch(res.url, { method: 'PUT', body: file, headers: { 'Content-Type': contentType } })
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), 120_000)
+          const response = await fetch(res.url, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': contentType },
+            signal: controller.signal,
+          })
+          clearTimeout(timeout)
           if (!response.ok) {
-            setErreur(`Erreur upload (${response.status}) — vérifie le CORS de ton bucket R2`)
-            return
+            setErreur(`Erreur upload ${response.status} — vérifie les variables R2 dans Vercel`)
+            setUploadStatus(null); return
           }
           formData.append('chemin', res.chemin)
           formData.append('mediaType', mediaType)
-        } catch (err) {
-          setErreur(`Upload bloqué (CORS) — configure le CORS sur ton bucket R2 Cloudflare`)
-          return
+        } catch (err: unknown) {
+          const msg = err instanceof Error && err.name === 'AbortError'
+            ? 'Upload trop long (timeout 2 min) — fichier trop lourd ?'
+            : 'Upload bloqué — CORS ou réseau'
+          setErreur(msg); setUploadStatus(null); return
         }
       }
+      setUploadStatus(null)
 
       const result = await ajouterSouvenir(null, formData)
       if (result?.error) setErreur(result.error)
@@ -291,7 +305,7 @@ export default function NouveauSouvenirPage() {
           )}
 
           <Button type="submit" loading={isPending} className="w-full">
-            Enregistrer le souvenir
+            {uploadStatus ?? 'Enregistrer le souvenir'}
           </Button>
         </form>
       </div>

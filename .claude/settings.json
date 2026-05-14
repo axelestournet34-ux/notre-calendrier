@@ -21,7 +21,11 @@
       "Bash(git commit -m 'Meilleur gestion erreurs upload + preview formats non supportés *)",
       "Bash(git commit -m 'Conversion automatique HEIC -> JPEG pour photos Samsung/iPhone *)",
       "Bash(git commit -m 'Renommer onglet mobile '\\\\''Souvenir'\\\\'' -> '\\\\''Ajouter'\\\\'' *)",
-      "Bash(git commit -m 'Nouvelles fonctionnalités : polaroïd du jour, courses, quiz souvenirs, notre chanson *)"
+      "Bash(git commit -m 'Nouvelles fonctionnalités : polaroïd du jour, courses, quiz souvenirs, notre chanson *)",
+      "Bash(git commit -m 'Swipe gauche/droite pour changer de mois dans le calendrier *)",
+      "Bash(git commit -m 'Corriger swipe calendrier : ignorer scroll vertical, seuil 40px *)",
+      "Bash(git commit -m 'Upload: timeout 2min, progression, message erreur précis *)",
+      "Bash(git commit -m 'Upload: timeout 2min, progression, message erreur precis *)"
     ]
   }
 }
