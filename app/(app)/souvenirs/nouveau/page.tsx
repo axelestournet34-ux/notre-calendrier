@@ -151,13 +151,25 @@ export default function NouveauSouvenirPage() {
         formData.append('mediaType', mediaType)
       } else {
         setUploadStatus(`${label}…`)
+        // Lire le fichier en mémoire avant l'upload pour éviter les File objects invalides
+        let buffer: ArrayBuffer
+        try {
+          buffer = await file.arrayBuffer()
+        } catch {
+          setErreur(`Impossible de lire le fichier "${file.name}" (${Math.round(file.size / 1024)} Ko)`)
+          setUploadStatus(null); setIsUploading(false); return
+        }
+        if (buffer.byteLength === 0) {
+          setErreur(`Fichier vide : "${file.name}" — réessaie en resélectionnant la photo`)
+          setUploadStatus(null); setIsUploading(false); return
+        }
         const res = await obtenirUrlUpload(file.name, contentType)
         if ('error' in res) { setErreur(res.error ?? 'Erreur'); setUploadStatus(null); setIsUploading(false); return }
         try {
           const ctrl = new AbortController()
-          const timer = setTimeout(() => ctrl.abort(), 120_000) // 2 min timeout
+          const timer = setTimeout(() => ctrl.abort(), 120_000)
           const response = await fetch(res.url, {
-            method: 'PUT', body: file,
+            method: 'PUT', body: buffer,
             headers: { 'Content-Type': contentType },
             signal: ctrl.signal,
           })
@@ -165,7 +177,7 @@ export default function NouveauSouvenirPage() {
           if (!response.ok) { setErreur(`Erreur upload ${response.status} — relance le script CORS R2`); setUploadStatus(null); setIsUploading(false); return }
         } catch (err: unknown) {
           const isTimeout = err instanceof Error && err.name === 'AbortError'
-          setErreur(isTimeout ? 'Délai dépassé — fichier trop volumineux ou réseau lent' : `Erreur CORS ou réseau : ${err instanceof Error ? err.message : 'inconnue'} — relance le script CORS R2`)
+          setErreur(isTimeout ? 'Délai dépassé — fichier trop volumineux ou réseau lent' : `Erreur réseau : ${err instanceof Error ? err.message : 'inconnue'}`)
           setUploadStatus(null); setIsUploading(false); return
         }
         formData.append('chemin', res.chemin)
