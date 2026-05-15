@@ -23,14 +23,11 @@ await r2.send(new PutBucketCorsCommand({
   CORSConfiguration: {
     CORSRules: [
       {
-        AllowedOrigins: [
-          'https://notre-calendrier.vercel.app',
-          'http://localhost:3000',
-        ],
+        AllowedOrigins: ['*'],
         AllowedMethods: ['GET', 'PUT', 'HEAD', 'DELETE'],
         AllowedHeaders: ['*'],
         ExposeHeaders: ['ETag'],
-        MaxAgeSeconds: 3600,
+        MaxAgeSeconds: 86400,
       },
     ],
   },

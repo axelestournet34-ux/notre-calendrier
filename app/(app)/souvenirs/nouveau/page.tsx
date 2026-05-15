@@ -172,10 +172,18 @@ export default function NouveauSouvenirPage() {
         const res = await obtenirUrlUpload(file.name, contentType)
         if ('error' in res) { setErreur(res.error ?? 'Erreur'); setUploadStatus(null); setIsUploading(false); return }
         try {
-          const response = await fetch(res.url, { method: 'PUT', body: file, headers: { 'Content-Type': contentType } })
-          if (!response.ok) { setErreur(`Erreur upload ${response.status} — vérifie la config CORS R2`); setUploadStatus(null); setIsUploading(false); return }
+          const ctrl = new AbortController()
+          const timer = setTimeout(() => ctrl.abort(), 120_000) // 2 min timeout
+          const response = await fetch(res.url, {
+            method: 'PUT', body: file,
+            headers: { 'Content-Type': contentType },
+            signal: ctrl.signal,
+          })
+          clearTimeout(timer)
+          if (!response.ok) { setErreur(`Erreur upload ${response.status} — relance le script CORS R2`); setUploadStatus(null); setIsUploading(false); return }
         } catch (err: unknown) {
-          setErreur(err instanceof Error ? `Erreur réseau : ${err.message}` : 'Erreur réseau upload')
+          const isTimeout = err instanceof Error && err.name === 'AbortError'
+          setErreur(isTimeout ? 'Délai dépassé — fichier trop volumineux ou réseau lent' : `Erreur CORS ou réseau : ${err instanceof Error ? err.message : 'inconnue'} — relance le script CORS R2`)
           setUploadStatus(null); setIsUploading(false); return
         }
         formData.append('chemin', res.chemin)
