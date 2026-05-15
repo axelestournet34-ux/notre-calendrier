@@ -46,6 +46,7 @@ export default function NouveauSouvenirPage() {
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isUploading, setIsUploading] = useState(false)
   const [isConverting, setIsConverting] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -81,82 +82,83 @@ export default function NouveauSouvenirPage() {
     })
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setErreur(null)
     const form = e.currentTarget
+    const formData = new FormData(form)
+    formData.delete('medias')
 
-    startTransition(async () => {
-      const formData = new FormData(form)
-      formData.delete('medias')
+    const tousLesFichiers: { file: File; estVideo: boolean; estAudio: boolean }[] = [
+      ...fichiers.map(f => ({ file: f.file, estVideo: f.estVideo, estAudio: false })),
+      ...(audioFile ? [{ file: audioFile, estVideo: false, estAudio: true }] : []),
+    ]
 
-      const tousLesFichiers: { file: File; estVideo: boolean; estAudio: boolean }[] = [
-        ...fichiers.map(f => ({ file: f.file, estVideo: f.estVideo, estAudio: false })),
-        ...(audioFile ? [{ file: audioFile, estVideo: false, estAudio: true }] : []),
-      ]
+    // Upload hors de startTransition pour que la progression s'affiche en temps réel
+    setIsUploading(true)
+    const TAILLE_MULTIPART = 10 * 1024 * 1024 // 10 MB
+    for (let i = 0; i < tousLesFichiers.length; i++) {
+      const { file, estVideo, estAudio } = tousLesFichiers[i]
+      const contentType = file.type || (estVideo ? 'video/mp4' : estAudio ? 'audio/webm' : 'image/jpeg')
+      const mediaType = estAudio ? 'audio' : estVideo ? 'video' : 'photo'
+      const label = `Fichier ${i + 1}/${tousLesFichiers.length}`
 
-      // Tous les fichiers uploadés directement vers R2 (bypass limite 4.5MB Vercel)
-      const TAILLE_MULTIPART = 10 * 1024 * 1024 // 10 MB
-      for (let i = 0; i < tousLesFichiers.length; i++) {
-        const { file, estVideo, estAudio } = tousLesFichiers[i]
-        const contentType = file.type || (estVideo ? 'video/mp4' : estAudio ? 'audio/webm' : 'image/jpeg')
-        const mediaType = estAudio ? 'audio' : estVideo ? 'video' : 'photo'
-        const label = `Fichier ${i + 1}/${tousLesFichiers.length}`
+      if (estVideo && file.size > TAILLE_MULTIPART) {
+        const nParties = Math.ceil(file.size / TAILLE_MULTIPART)
+        setUploadStatus(`${label} — initialisation…`)
+        const init = await initierUploadVideo(file.name, contentType)
+        if ('error' in init) { setErreur(init.error ?? 'Erreur'); setUploadStatus(null); setIsUploading(false); return }
 
-        if (estVideo && file.size > TAILLE_MULTIPART) {
-          // Multipart pour les grandes vidéos
-          const nParties = Math.ceil(file.size / TAILLE_MULTIPART)
-          setUploadStatus(`${label} — initialisation…`)
-          const init = await initierUploadVideo(file.name, contentType)
-          if ('error' in init) { setErreur(init.error ?? 'Erreur'); setUploadStatus(null); return }
+        const { uploadId, chemin } = init
+        const parts: { ETag: string; PartNumber: number }[] = []
+        try {
+          for (let p = 0; p < nParties; p++) {
+            const start = p * TAILLE_MULTIPART
+            const chunk = file.slice(start, Math.min(start + TAILLE_MULTIPART, file.size))
+            setUploadStatus(`${label} — ${Math.round((p / nParties) * 100)}%`)
 
-          const { uploadId, chemin } = init
-          const parts: { ETag: string; PartNumber: number }[] = []
-          try {
-            for (let p = 0; p < nParties; p++) {
-              const start = p * TAILLE_MULTIPART
-              const chunk = file.slice(start, Math.min(start + TAILLE_MULTIPART, file.size))
-              setUploadStatus(`${label} — ${Math.round((p / nParties) * 100)}%`)
+            const partRes = await obtenirUrlPart(chemin, uploadId, p + 1)
+            if ('error' in partRes) throw new Error(partRes.error)
 
-              const partRes = await obtenirUrlPart(chemin, uploadId, p + 1)
-              if ('error' in partRes) throw new Error(partRes.error)
-
-              const res = await fetch(partRes.url, { method: 'PUT', body: chunk, headers: { 'Content-Type': contentType } })
-              if (!res.ok) throw new Error(`Partie ${p + 1} échouée (${res.status})`)
-              const etag = res.headers.get('ETag')
-              if (!etag) throw new Error(`ETag manquant pour la partie ${p + 1}`)
-              parts.push({ ETag: etag, PartNumber: p + 1 })
-            }
-          } catch (err: unknown) {
-            setErreur(err instanceof Error ? err.message : 'Erreur upload vidéo')
-            setUploadStatus(null); return
+            const res = await fetch(partRes.url, { method: 'PUT', body: chunk, headers: { 'Content-Type': contentType } })
+            if (!res.ok) throw new Error(`Partie ${p + 1} échouée (${res.status})`)
+            const etag = res.headers.get('ETag')
+            if (!etag) throw new Error(`ETag manquant — vérifie la config CORS R2 (ExposeHeaders: ETag)`)
+            parts.push({ ETag: etag, PartNumber: p + 1 })
           }
-
-          setUploadStatus(`${label} — finalisation…`)
-          const fin = await finaliserUploadVideo(chemin, uploadId, parts)
-          if ('error' in fin) { setErreur(fin.error ?? 'Erreur'); setUploadStatus(null); return }
-
-          formData.append('chemin', chemin)
-          formData.append('mediaType', mediaType)
-        } else {
-          // Upload simple pour photos, audio et petites vidéos
-          setUploadStatus(`${label}…`)
-          const res = await obtenirUrlUpload(file.name, contentType)
-          if ('error' in res) { setErreur(res.error ?? 'Erreur'); setUploadStatus(null); return }
-          try {
-            const response = await fetch(res.url, { method: 'PUT', body: file, headers: { 'Content-Type': contentType } })
-            if (!response.ok) { setErreur(`Erreur upload (${response.status})`); setUploadStatus(null); return }
-          } catch {
-            setErreur('Erreur réseau lors de l\'upload'); setUploadStatus(null); return
-          }
-          formData.append('chemin', res.chemin)
-          formData.append('mediaType', mediaType)
+        } catch (err: unknown) {
+          setErreur(err instanceof Error ? err.message : 'Erreur upload vidéo')
+          setUploadStatus(null); setIsUploading(false); return
         }
-      }
-      if (tousLesFichiers.length > 0) setUploadStatus('Enregistrement…')
 
+        setUploadStatus(`${label} — finalisation…`)
+        const fin = await finaliserUploadVideo(chemin, uploadId, parts)
+        if ('error' in fin) { setErreur(fin.error ?? 'Erreur'); setUploadStatus(null); setIsUploading(false); return }
+
+        formData.append('chemin', chemin)
+        formData.append('mediaType', mediaType)
+      } else {
+        setUploadStatus(`${label}…`)
+        const res = await obtenirUrlUpload(file.name, contentType)
+        if ('error' in res) { setErreur(res.error ?? 'Erreur'); setUploadStatus(null); setIsUploading(false); return }
+        try {
+          const response = await fetch(res.url, { method: 'PUT', body: file, headers: { 'Content-Type': contentType } })
+          if (!response.ok) { setErreur(`Erreur upload ${response.status} — vérifie la config CORS R2`); setUploadStatus(null); setIsUploading(false); return }
+        } catch (err: unknown) {
+          setErreur(err instanceof Error ? `Erreur réseau : ${err.message}` : 'Erreur réseau upload')
+          setUploadStatus(null); setIsUploading(false); return
+        }
+        formData.append('chemin', res.chemin)
+        formData.append('mediaType', mediaType)
+      }
+    }
+
+    setUploadStatus('Enregistrement…')
+    // Seulement le server action dans startTransition (gère la navigation)
+    startTransition(async () => {
       const result = await ajouterSouvenir(null, formData)
       setUploadStatus(null)
+      setIsUploading(false)
       if (result?.error) setErreur(result.error)
     })
   }
@@ -333,7 +335,7 @@ export default function NouveauSouvenirPage() {
             </p>
           )}
 
-          <Button type="submit" loading={isPending} className="w-full">
+          <Button type="submit" loading={isUploading || isPending} className="w-full">
             {uploadStatus ?? 'Enregistrer le souvenir'}
           </Button>
         </form>
