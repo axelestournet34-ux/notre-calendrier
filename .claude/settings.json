@@ -25,7 +25,10 @@
       "Bash(git commit -m 'Swipe gauche/droite pour changer de mois dans le calendrier *)",
       "Bash(git commit -m 'Corriger swipe calendrier : ignorer scroll vertical, seuil 40px *)",
       "Bash(git commit -m 'Upload: timeout 2min, progression, message erreur précis *)",
-      "Bash(git commit -m 'Upload: timeout 2min, progression, message erreur precis *)"
+      "Bash(git commit -m 'Upload: timeout 2min, progression, message erreur precis *)",
+      "Bash(git commit -m 'Revenir upload serveur \\(supprime presigned URL qui bloquait CORS\\) *)",
+      "Bash(git commit -m 'Hybride : photos via serveur, vidéos via presigned URL R2 *)",
+      "Bash(node scripts/setup-r2-cors.mjs)"
     ]
   }
 }
