@@ -11,7 +11,7 @@ import { EnregistreurAudio } from '@/components/shared/enregistreur-audio'
 import { cn } from '@/utils/cn'
 import type { MemoryType } from '@/types/database.types'
 
-function estHeic(file: File): boolean {
+function estHeicParType(file: File): boolean {
   return (
     file.type === 'image/heic' ||
     file.type === 'image/heif' ||
@@ -20,12 +20,25 @@ function estHeic(file: File): boolean {
   )
 }
 
+// Samsung Galaxy peut envoyer des HEIC avec file.type='image/jpeg' → vérification par magic bytes
+async function estHeic(file: File): Promise<boolean> {
+  if (estHeicParType(file)) return true
+  if (!file.type.startsWith('image/') || file.type === 'image/gif') return false
+  try {
+    const buf = await file.slice(4, 12).arrayBuffer()
+    const v = new Uint8Array(buf)
+    const box = String.fromCharCode(v[0], v[1], v[2], v[3])
+    const brand = String.fromCharCode(v[4], v[5], v[6], v[7])
+    return box === 'ftyp' && ['heic', 'heis', 'hevc', 'hevm', 'hevs', 'mif1', 'msf1', 'heif'].includes(brand)
+  } catch { return false }
+}
+
 async function convertirHeicEnJpeg(file: File): Promise<File> {
   const heic2any = (await import('heic2any')).default
   const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
   const converted = Array.isArray(blob) ? blob[0] : blob
-  const nomJpeg = file.name.replace(/\.(heic|heif)$/i, '.jpg')
-  return new File([converted], nomJpeg, { type: 'image/jpeg' })
+  const nomJpeg = file.name.replace(/\.(heic|heif)$/i, '.jpg').replace(/\.jpg$/i, '.jpg')
+  return new File([converted], nomJpeg.endsWith('.jpg') ? nomJpeg : nomJpeg + '.jpg', { type: 'image/jpeg' })
 }
 
 const TYPES: { value: MemoryType; label: string; emoji: string }[] = [
@@ -58,21 +71,38 @@ export default function NouveauSouvenirPage() {
     if (!fichiersBruts.length) return
 
     setIsConverting(true)
-    try {
-      const convertis = await Promise.all(
-        fichiersBruts.map(f => estHeic(f) ? convertirHeicEnJpeg(f) : Promise.resolve(f))
-      )
-      const nouveaux = convertis.map(file => ({
-        file,
-        url: URL.createObjectURL(file),
-        estVideo: file.type.startsWith('video/'),
-      }))
-      setFichiers(prev => [...prev, ...nouveaux].slice(0, 50))
-    } catch {
-      setErreur('Erreur lors de la conversion des photos HEIC.')
-    } finally {
-      setIsConverting(false)
+    setErreur(null)
+    const convertis: File[] = []
+    let nbEchecs = 0
+
+    for (const f of fichiersBruts) {
+      if (f.type.startsWith('video/')) {
+        convertis.push(f)
+        continue
+      }
+      const heic = await estHeic(f)
+      if (heic) {
+        try {
+          convertis.push(await convertirHeicEnJpeg(f))
+        } catch {
+          nbEchecs++
+        }
+      } else {
+        convertis.push(f)
+      }
     }
+
+    if (nbEchecs > 0) {
+      setErreur(`${nbEchecs} photo(s) HEIC n'ont pas pu être converties et ont été ignorées.`)
+    }
+
+    const nouveaux = convertis.map(file => ({
+      file,
+      url: URL.createObjectURL(file),
+      estVideo: file.type.startsWith('video/'),
+    }))
+    setFichiers(prev => [...prev, ...nouveaux].slice(0, 50))
+    setIsConverting(false)
   }
 
   function supprimerFichier(index: number) {
