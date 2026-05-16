@@ -163,7 +163,13 @@ export default function NouveauSouvenirPage() {
           setErreur(`Fichier vide : "${file.name}" — réessaie en resélectionnant la photo`)
           setUploadStatus(null); setIsUploading(false); return
         }
-        const res = await obtenirUrlUpload(file.name, contentType)
+        let res: Awaited<ReturnType<typeof obtenirUrlUpload>>
+        try {
+          res = await obtenirUrlUpload(file.name, contentType)
+        } catch (err: unknown) {
+          setErreur(`Erreur serveur : ${err instanceof Error ? err.message : 'impossible de générer l\'URL d\'upload'}`)
+          setUploadStatus(null); setIsUploading(false); return
+        }
         if ('error' in res) { setErreur(res.error ?? 'Erreur'); setUploadStatus(null); setIsUploading(false); return }
         try {
           const ctrl = new AbortController()
