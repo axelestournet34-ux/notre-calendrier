@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/header'
 import { InviterClient } from './inviter-client'
@@ -34,15 +33,12 @@ export default async function InviterPage() {
     )
   }
 
-  const headersList = await headers()
-  const host = headersList.get('host') ?? ''
-  const proto = host.includes('localhost') ? 'http' : 'https'
-  const lien = `${proto}://${host}/invitation/${data.token}`
+  const code = data.token.substring(0, 8).toUpperCase()
 
   return (
     <>
-      <Header title="Inviter Fanny" subtitle="Lien valable 7 jours" />
-      <InviterClient lien={lien} />
+      <Header title="Inviter Fanny" subtitle="Code valable 7 jours" />
+      <InviterClient code={code} />
     </>
   )
 }
