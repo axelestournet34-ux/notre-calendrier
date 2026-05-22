@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import {
   Home, Calendar, Heart, Images, Clock,
   List, Mail, Star, Settings, LogOut,
-  BarChart2, MapPin, Sparkles, PenLine,
+  BarChart2, MapPin, PenLine,
   HelpCircle, Music
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -20,10 +20,8 @@ const navigation = [
   { href: '/galerie',           label: 'Galerie',           icon: Images },
   { href: '/timeline',          label: 'Timeline',          icon: Clock },
   { href: '/bilan',             label: 'Bilan',             icon: BarChart2 },
-  { href: '/stats',             label: 'Stats',             icon: Sparkles },
   { href: '/lieux',             label: 'Lieux',             icon: MapPin },
   { href: '/mots-amour',        label: 'Mots d\'amour',     icon: PenLine },
-  { href: '/lettre',            label: 'Lettres',           icon: Mail },
   { href: '/bucket-list',       label: 'Bucket list',       icon: List },
   { href: '/capsules',          label: 'Capsules',          icon: Mail },
   { href: '/dates-importantes', label: 'Dates importantes', icon: Star },

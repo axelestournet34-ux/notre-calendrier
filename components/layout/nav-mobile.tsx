@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
   Home, Heart, Clock, MoreHorizontal,
-  Calendar, Images, BarChart2, Sparkles,
-  MapPin, PenLine, Mail, List, Star,
+  Calendar, Images, BarChart2,
+  MapPin, PenLine, List, Star,
   Settings, X, HelpCircle, Music
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -22,9 +22,7 @@ const navPlus = [
   { href: '/calendrier',        label: 'Calendrier',        icon: Calendar },
   { href: '/galerie',           label: 'Galerie photos',    icon: Images },
   { href: '/bilan',             label: 'Bilan annuel',      icon: BarChart2 },
-  { href: '/stats',             label: 'Nos stats',         icon: Sparkles },
   { href: '/mots-amour',        label: 'Mots d\'amour',     icon: PenLine },
-  { href: '/lettre',            label: 'Nos lettres',       icon: Mail },
   { href: '/lieux',             label: 'Nos lieux',         icon: MapPin },
   { href: '/bucket-list',       label: 'Bucket list',       icon: List },
   { href: '/dates-importantes', label: 'Dates importantes', icon: Star },
