@@ -70,9 +70,14 @@ create policy "members_delete_own"
   using (user_id = auth.uid());
 
 -- ─── COUPLE_INVITATIONS ─────────────────────────────────────────
+-- Membres du couple voient leurs invitations ; utilisateur connecté peut lire
+-- une invitation non expirée pour la rejoindre (avant d'être membre)
 create policy "invitations_select_member"
   on public.couple_invitations for select
-  using (is_couple_member(couple_id));
+  using (
+    is_couple_member(couple_id)
+    OR (auth.uid() is not null AND accepted_at IS NULL AND expires_at > now())
+  );
 
 create policy "invitations_insert_member"
   on public.couple_invitations for insert
