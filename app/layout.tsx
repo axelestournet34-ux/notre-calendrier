@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/providers/theme-provider'
+import { RegisterSW } from '@/components/shared/register-sw'
 import './globals.css'
 
 const geist = Geist({
@@ -45,6 +46,7 @@ export default function RootLayout({
     <html lang="fr" className={`${geist.variable} h-full`} suppressHydrationWarning>
       <body className="h-full">
         <ThemeProvider>
+          <RegisterSW />
           {children}
           <Toaster
             position="bottom-right"

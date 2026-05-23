@@ -13,14 +13,9 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       {
         src: '/catoune.jpg',
-        sizes: '192x192',
+        sizes: 'any',
         type: 'image/jpeg',
-      },
-      {
-        src: '/catoune.jpg',
-        sizes: '512x512',
-        type: 'image/jpeg',
-        purpose: 'maskable',
+        purpose: 'any maskable',
       },
     ],
   }
