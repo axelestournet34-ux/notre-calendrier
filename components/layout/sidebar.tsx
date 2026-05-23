@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { seDeconnecter } from '@/features/auth/actions'
+import { BoutonInstaller } from '@/components/shared/pwa-install'
 import type { Profile, Couple } from '@/types/app.types'
 
 const navigation = [
@@ -103,6 +104,8 @@ export function Sidebar({ profile, couple }: SidebarProps) {
           <Settings size={18} className="shrink-0 text-text-muted" />
           Paramètres
         </Link>
+
+        <BoutonInstaller className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-soft hover:bg-surface-raised hover:text-text transition-all duration-150" />
 
         <form action={seDeconnecter}>
           <button
