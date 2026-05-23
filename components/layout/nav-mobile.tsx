@@ -7,7 +7,7 @@ import {
   Home, Heart, Clock, MoreHorizontal,
   Calendar, Images, BarChart2,
   MapPin, PenLine, List, Star,
-  Settings, X, HelpCircle, Music
+  Settings, X, HelpCircle, Music, Download
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { seDeconnecter } from '@/features/auth/actions'
@@ -29,6 +29,7 @@ const navPlus = [
   { href: '/quiz',              label: 'Quiz souvenirs',    icon: HelpCircle },
   { href: '/notre-chanson',     label: 'Notre chanson',     icon: Music },
   { href: '/parametres/profil', label: 'Paramètres',        icon: Settings },
+  { href: '/installer',         label: 'Installer l\'app',  icon: Download },
 ]
 
 export function NavMobile() {
