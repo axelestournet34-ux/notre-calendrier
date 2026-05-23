@@ -15,7 +15,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/catoune.jpg',
         sizes: 'any',
         type: 'image/jpeg',
-        purpose: 'any maskable',
+        purpose: 'maskable',
       },
     ],
   }
