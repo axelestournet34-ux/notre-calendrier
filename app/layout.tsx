@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   },
   description: 'Notre espace privé de souvenirs et de moments partagés.',
   robots: { index: false, follow: false },
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

@@ -1,14 +1,16 @@
-import type { MetadataRoute } from 'next'
+import { NextResponse } from 'next/server'
 
-export default function manifest(): MetadataRoute.Manifest {
-  return {
-    name: 'Notre Calendrier',
+export const dynamic = 'force-static'
+
+export function GET() {
+  const manifest = {
+    name: 'Nos Souvenirs',
     short_name: 'Nos Souvenirs',
-    description: 'Notre espace privé de souvenirs partagés.',
+    description: 'Notre espace privé de souvenirs et de moments partagés.',
     start_url: '/dashboard',
     display: 'standalone',
     background_color: '#faf8f5',
-    theme_color: '#c47c82',
+    theme_color: '#faf8f5',
     orientation: 'portrait',
     icons: [
       {
@@ -25,4 +27,10 @@ export default function manifest(): MetadataRoute.Manifest {
       },
     ],
   }
+
+  return NextResponse.json(manifest, {
+    headers: {
+      'Cache-Control': 'no-cache',
+    },
+  })
 }

@@ -2,6 +2,20 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Fichiers publics accessibles sans authentification
+  if (
+    pathname === '/manifest.json' ||
+    pathname === '/manifest.webmanifest' ||
+    pathname === '/sw.js' ||
+    pathname.startsWith('/icon') ||
+    pathname.startsWith('/apple-icon') ||
+    pathname === '/favicon.ico'
+  ) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -27,7 +41,6 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
   const isAuthRoute =
     pathname.startsWith('/connexion') ||
     pathname.startsWith('/inscription') ||
@@ -50,6 +63,26 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/dashboard/:path*',
+    '/calendrier/:path*',
+    '/galerie/:path*',
+    '/timeline',
+    '/bilan/:path*',
+    '/lieux',
+    '/mots-amour',
+    '/bucket-list',
+    '/capsules',
+    '/dates-importantes',
+    '/quiz',
+    '/notre-chanson',
+    '/parametres/:path*',
+    '/souvenirs/:path*',
+    '/jour/:path*',
+    '/inviter',
+    '/installer',
+    '/connexion',
+    '/inscription',
+    '/invitation/:path*',
+    '/onboarding',
   ],
 }
