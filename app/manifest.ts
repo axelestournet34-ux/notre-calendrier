@@ -10,6 +10,18 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: '#faf8f5',
     theme_color: '#c47c82',
     orientation: 'portrait',
-    icons: [],
+    icons: [
+      {
+        src: '/catoune.jpg',
+        sizes: '192x192',
+        type: 'image/jpeg',
+      },
+      {
+        src: '/catoune.jpg',
+        sizes: '512x512',
+        type: 'image/jpeg',
+        purpose: 'maskable',
+      },
+    ],
   }
 }

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { NavMobile } from '@/components/layout/nav-mobile'
+import { PwaInstall } from '@/components/shared/pwa-install'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -36,6 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
 
       <NavMobile />
+      <PwaInstall />
     </div>
   )
 }
