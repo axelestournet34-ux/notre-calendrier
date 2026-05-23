@@ -7,7 +7,7 @@ import {
   Home, Heart, Clock, MoreHorizontal,
   Calendar, Images, BarChart2,
   MapPin, PenLine, List, Star,
-  Settings, X, HelpCircle, Music, Download
+  Settings, X, HelpCircle, Music, Download, Archive
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { seDeconnecter } from '@/features/auth/actions'
@@ -25,6 +25,7 @@ const navPlus = [
   { href: '/mots-amour',        label: 'Mots d\'amour',     icon: PenLine },
   { href: '/lieux',             label: 'Nos lieux',         icon: MapPin },
   { href: '/bucket-list',       label: 'Bucket list',       icon: List },
+  { href: '/capsules',          label: 'Capsules',          icon: Archive },
   { href: '/dates-importantes', label: 'Dates importantes', icon: Star },
   { href: '/quiz',              label: 'Quiz souvenirs',    icon: HelpCircle },
   { href: '/notre-chanson',     label: 'Notre chanson',     icon: Music },
