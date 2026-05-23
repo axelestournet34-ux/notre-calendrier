@@ -17,14 +17,10 @@ export const metadata: Metadata = {
   },
   description: 'Notre espace privé de souvenirs et de moments partagés.',
   robots: { index: false, follow: false },
-  manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Nos Souvenirs',
-  },
-  icons: {
-    apple: '/catoune.jpg',
   },
 }
 
