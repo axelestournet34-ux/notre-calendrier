@@ -50,30 +50,37 @@ export default async function GaleriePage({ params }: Props) {
       }[] | null
     }
 
-  // Génération des URLs signées côté serveur
+  // Aplatir toutes les photos triées avec leur souvenir parent
+  const allPhotos = (memories ?? []).flatMap((memory) =>
+    [...memory.memory_photos]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((photo) => ({ photo, memory }))
+  )
+
+  // Générer toutes les URLs signées en parallèle
+  const urls = await Promise.all(
+    allPhotos.map(({ photo }) => getR2Url(photo.storage_path).catch(() => null))
+  )
+
   const photos: {
     id: string; url: string; caption: string | null
     memoryId: string; memoryTitle: string; storagePath: string
     mediaType: string
-  }[] = []
-
-  for (const memory of memories ?? []) {
-    const sorted = [...memory.memory_photos].sort((a, b) => a.sort_order - b.sort_order)
-    for (const photo of sorted) {
-      const url = await getR2Url(photo.storage_path).catch(() => null)
-      if (url) {
-        photos.push({
-          id: photo.id,
-          url,
-          caption: photo.caption,
-          memoryId: memory.id,
-          memoryTitle: memory.title,
-          storagePath: photo.storage_path,
-          mediaType: photo.media_type ?? 'photo',
-        })
-      }
-    }
-  }
+  }[] = allPhotos
+    .map(({ photo, memory }, i) =>
+      urls[i]
+        ? {
+            id: photo.id,
+            url: urls[i]!,
+            caption: photo.caption,
+            memoryId: memory.id,
+            memoryTitle: memory.title,
+            storagePath: photo.storage_path,
+            mediaType: photo.media_type ?? 'photo',
+          }
+        : null
+    )
+    .filter((p): p is NonNullable<typeof p> => p !== null)
 
   const navPrecedent = `/galerie/${format(moisPrecedent, 'yyyy')}/${format(moisPrecedent, 'M')}`
   const navSuivant = `/galerie/${format(moisSuivant, 'yyyy')}/${format(moisSuivant, 'M')}`

@@ -18,60 +18,80 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/connexion')
 
-  const { data: profile } = await supabase
-    .from('profiles').select('full_name').eq('id', user.id).single() as { data: { full_name: string | null } | null }
-
-  const { data: memberRow } = await supabase
-    .from('couple_members')
-    .select('couple_id, couples(id, name, start_date, cover_url)')
-    .eq('user_id', user.id)
-    .single() as {
-      data: {
-        couple_id: string
-        couples: { id: string; name: string; start_date: string | null; cover_url: string | null }
-      } | null
-    }
+  const [{ data: profile }, { data: memberRow }] = await Promise.all([
+    supabase.from('profiles').select('full_name').eq('id', user.id).single() as Promise<{ data: { full_name: string | null } | null }>,
+    supabase.from('couple_members')
+      .select('couple_id, couples(id, name, start_date, cover_url)')
+      .eq('user_id', user.id)
+      .single() as Promise<{
+        data: {
+          couple_id: string
+          couples: { id: string; name: string; start_date: string | null; cover_url: string | null }
+        } | null
+      }>,
+  ])
 
   const couple = memberRow?.couples ?? null
   const now = new Date()
   const today = now.toISOString().split('T')[0]
 
-  // Souvenirs du mois
-  const debutMois = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd')
-  const finMois   = format(new Date(now.getFullYear(), now.getMonth() + 1, 0), 'yyyy-MM-dd')
-  type SouvenirRow = { id: string; title: string; date: string; type: string; memory_photos: { storage_path: string }[] }
-  const { data: souvenirsRecents } = (
-    couple ? await supabase.from('memories')
-      .select('id, title, date, type, memory_photos(storage_path)')
-      .eq('couple_id', couple.id)
-      .gte('date', debutMois).lte('date', finMois)
-      .order('date', { ascending: false }).limit(3)
-    : { data: [] }
-  ) as { data: SouvenirRow[] | null }
-
-  // Il y a un an
-  const debutAnPasse = format(new Date(now.getFullYear() - 1, now.getMonth(), 1), 'yyyy-MM-dd')
+  const debutMois   = format(new Date(now.getFullYear(), now.getMonth(), 1),      'yyyy-MM-dd')
+  const finMois     = format(new Date(now.getFullYear(), now.getMonth() + 1, 0),  'yyyy-MM-dd')
+  const debutAnPasse = format(new Date(now.getFullYear() - 1, now.getMonth(), 1),     'yyyy-MM-dd')
   const finAnPasse   = format(new Date(now.getFullYear() - 1, now.getMonth() + 1, 0), 'yyyy-MM-dd')
+
+  type SouvenirRow = { id: string; title: string; date: string; type: string; memory_photos: { storage_path: string }[] }
   type SouvenirAnRow = { id: string; title: string; date: string }
-  const { data: souvenirsDernierAn } = (
-    couple ? await supabase.from('memories')
-      .select('id, title, date').eq('couple_id', couple.id)
-      .gte('date', debutAnPasse).lte('date', finAnPasse)
-      .order('date', { ascending: false }).limit(5)
-    : { data: [] }
-  ) as { data: SouvenirAnRow[] | null }
+  type SouvenirPhotoRow = { id: string; title: string; date: string; memory_photos: { storage_path: string; media_type: string }[] }
+  type DateRow = { id: string; title: string; date: string; recurrent: boolean }
+  type MessageRow = { id: string; content: string; author_id: string; profiles: { full_name: string | null } }
+  type MoodRow = { user_id: string; mood: string; profiles: { full_name: string | null } }
+
+  const noData = { data: [] }
+
+  const [
+    { data: souvenirsRecents },
+    { data: souvenirsDernierAn },
+    { data: souvenirsPourPhoto },
+    { data: datesImportantes },
+    { data: messagesAujourdhui },
+    { data: humeursAujourdhui },
+  ] = await Promise.all([
+    couple
+      ? supabase.from('memories').select('id, title, date, type, memory_photos(storage_path)')
+          .eq('couple_id', couple.id).gte('date', debutMois).lte('date', finMois)
+          .order('date', { ascending: false }).limit(3)
+      : noData,
+    couple
+      ? supabase.from('memories').select('id, title, date')
+          .eq('couple_id', couple.id).gte('date', debutAnPasse).lte('date', finAnPasse)
+          .order('date', { ascending: false }).limit(5)
+      : noData,
+    couple
+      ? supabase.from('memories').select('id, title, date, memory_photos(storage_path, media_type)')
+          .eq('couple_id', couple.id).limit(50)
+      : noData,
+    couple
+      ? supabase.from('important_dates').select('id, title, date, recurrent').eq('couple_id', couple.id)
+      : noData,
+    couple
+      ? supabase.from('daily_messages').select('id, content, author_id, profiles(full_name)')
+          .eq('couple_id', couple.id).eq('date', today)
+      : noData,
+    couple
+      ? supabase.from('daily_moods').select('user_id, mood, profiles(full_name)')
+          .eq('couple_id', couple.id).eq('date', today)
+      : noData,
+  ]) as [
+    { data: SouvenirRow[] | null },
+    { data: SouvenirAnRow[] | null },
+    { data: SouvenirPhotoRow[] | null },
+    { data: DateRow[] | null },
+    { data: MessageRow[] | null },
+    { data: MoodRow[] | null },
+  ]
 
   // Photo du jour
-  type SouvenirPhotoRow = { id: string; title: string; date: string; memory_photos: { storage_path: string; media_type: string }[] }
-  const { data: souvenirsPourPhoto } = (
-    couple ? await supabase.from('memories')
-      .select('id, title, date, memory_photos(storage_path, media_type)')
-      .eq('couple_id', couple.id)
-      .limit(50)
-    : { data: [] }
-  ) as { data: SouvenirPhotoRow[] | null }
-
-  // On ne garde que les souvenirs ayant au moins une vraie photo (pas vidéo/audio)
   const avecPhotos = (souvenirsPourPhoto ?? []).filter((m) => m.memory_photos.some((p) => p.media_type === 'photo'))
   const souvenirAleatoire = avecPhotos.length > 0
     ? avecPhotos[Math.floor(Math.random() * avecPhotos.length)]
@@ -80,13 +100,6 @@ export default async function DashboardPage() {
   const photoAleatoireUrl = photoAleatoirePath
     ? await getR2Url(photoAleatoirePath).catch(() => null)
     : null
-
-  // Prochaine date importante
-  type DateRow = { id: string; title: string; date: string; recurrent: boolean }
-  const { data: datesImportantes } = (
-    couple ? await supabase.from('important_dates').select('id, title, date, recurrent').eq('couple_id', couple.id)
-    : { data: [] }
-  ) as { data: DateRow[] | null }
 
   function trouverProchaineDate(dates: DateRow[], maintenant: Date) {
     let minMs = Infinity
@@ -111,26 +124,8 @@ export default async function DashboardPage() {
     ? Math.ceil((prochaineDate.nextDate.getTime() - now.getTime()) / 86400000)
     : null
 
-  // Messages du jour
-  type MessageRow = { id: string; content: string; author_id: string; profiles: { full_name: string | null } }
-  const { data: messagesAujourdhui } = couple ? (await supabase
-    .from('daily_messages')
-    .select('id, content, author_id, profiles(full_name)')
-    .eq('couple_id', couple.id)
-    .eq('date', today)) as { data: MessageRow[] | null }
-    : { data: [] as MessageRow[] }
-
   const monMessage = messagesAujourdhui?.find(m => m.author_id === user.id) ?? null
   const messagePartenaire = messagesAujourdhui?.find(m => m.author_id !== user.id) ?? null
-
-  // Humeurs du jour
-  type MoodRow = { user_id: string; mood: string; profiles: { full_name: string | null } }
-  const { data: humeursAujourdhui } = couple ? (await supabase
-    .from('daily_moods')
-    .select('user_id, mood, profiles(full_name)')
-    .eq('couple_id', couple.id)
-    .eq('date', today)) as { data: MoodRow[] | null }
-    : { data: [] as MoodRow[] }
 
   const monHumeur = (humeursAujourdhui?.find(h => h.user_id === user.id)?.mood as MoodType) ?? null
   const humeurPartenairRow = humeursAujourdhui?.find(h => h.user_id !== user.id)
