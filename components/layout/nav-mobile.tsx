@@ -7,7 +7,7 @@ import {
   Home, Heart, Clock, MoreHorizontal,
   Calendar, Images, BarChart2,
   MapPin, PenLine, List, Star,
-  Settings, X, HelpCircle, Music, Download, Archive, Sun
+  Settings, X, Gamepad2, Music, Download, Archive, Sun
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
@@ -27,7 +27,7 @@ const navPlus = [
   { href: '/bucket-list',       label: 'Bucket list',       icon: List },
   { href: '/capsules',          label: 'Capsules',          icon: Archive },
   { href: '/dates-importantes', label: 'Dates importantes', icon: Star },
-  { href: '/quiz',              label: 'Quiz souvenirs',    icon: HelpCircle },
+  { href: '/jeux',              label: 'Jeux',              icon: Gamepad2 },
   { href: '/notre-chanson',     label: 'Notre chanson',     icon: Music },
   { href: '/parametres/profil', label: 'Paramètres',        icon: Settings },
   { href: '/installer',         label: 'Installer l\'app',  icon: Download },
@@ -131,9 +131,7 @@ export function NavMobile() {
           })}
         </div>
 
-        <div className="px-4 pb-8 border-t border-border pt-3">
-          <p className="text-center text-xs text-text-muted py-2">Mode démo ✨</p>
-        </div>
+        <div className="pb-8" />
       </div>
     </>
   )

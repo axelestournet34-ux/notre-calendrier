@@ -6,7 +6,7 @@ import {
   Home, Calendar, Heart, Images, Clock,
   List, Mail, Star, Settings,
   BarChart2, MapPin, PenLine,
-  HelpCircle, Music, Sun
+  Gamepad2, Music, Sun
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { BoutonInstaller } from '@/components/shared/pwa-install'
@@ -25,7 +25,7 @@ const navigation = [
   { href: '/bucket-list',       label: 'Bucket list',       icon: List },
   { href: '/capsules',          label: 'Capsules',          icon: Mail },
   { href: '/dates-importantes', label: 'Dates importantes', icon: Star },
-  { href: '/quiz',              label: 'Quiz souvenirs',    icon: HelpCircle },
+  { href: '/jeux',              label: 'Jeux',              icon: Gamepad2 },
   { href: '/notre-chanson',     label: 'Notre chanson',     icon: Music },
 ]
 
