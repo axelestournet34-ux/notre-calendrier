@@ -35,19 +35,20 @@ export default async function QuizPage() {
     )
   }
 
-  type MemoryRow = { id: string; title: string; date: string; memory_photos: { storage_path: string }[] }
+  type MemoryRow = { id: string; title: string; date: string; memory_photos: { storage_path: string; media_type: string }[] }
   const { data: rows } = await supabase
     .from('memories')
-    .select('id, title, date, memory_photos(storage_path)')
+    .select('id, title, date, memory_photos(storage_path, media_type)')
     .eq('couple_id', memberRow.couple_id)
     .limit(200) as { data: MemoryRow[] | null }
 
-  const avecPhotos = (rows ?? []).filter((m) => m.memory_photos.length > 0)
+  // Le quiz montre une photo à deviner : on ignore les souvenirs sans photo (vidéo/audio uniquement)
+  const avecPhotos = (rows ?? []).filter((m) => m.memory_photos.some((p) => p.media_type === 'photo'))
 
   const memories: QuizMemory[] = (
     await Promise.all(
       avecPhotos.map(async (m) => {
-        const path = m.memory_photos[0]?.storage_path
+        const path = m.memory_photos.find((p) => p.media_type === 'photo')?.storage_path
         if (!path) return null
         const photoUrl = await getR2Url(path).catch(() => null)
         if (!photoUrl) return null

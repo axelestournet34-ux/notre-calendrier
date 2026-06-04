@@ -26,6 +26,22 @@ export function GET() {
         purpose: 'maskable',
       },
     ],
+    shortcuts: [
+      {
+        name: 'Écrire le message du jour',
+        short_name: 'Message du jour',
+        description: 'Écris ton message du jour et lis celui de ton/ta partenaire',
+        url: '/aujourdhui',
+        icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+      },
+      {
+        name: 'Ajouter un souvenir',
+        short_name: 'Souvenir',
+        description: 'Ajoute un souvenir avec photos',
+        url: '/souvenirs/nouveau',
+        icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+      },
+    ],
   }
 
   return NextResponse.json(manifest, {

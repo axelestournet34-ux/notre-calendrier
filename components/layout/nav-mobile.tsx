@@ -7,7 +7,7 @@ import {
   Home, Heart, Clock, MoreHorizontal,
   Calendar, Images, BarChart2,
   MapPin, PenLine, List, Star,
-  Settings, X, HelpCircle, Music, Download, Archive
+  Settings, X, HelpCircle, Music, Download, Archive, Sun
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { seDeconnecter } from '@/features/auth/actions'
@@ -19,6 +19,7 @@ const navPrincipal = [
 ]
 
 const navPlus = [
+  { href: '/aujourdhui',        label: 'Notre journée',     icon: Sun },
   { href: '/calendrier',        label: 'Calendrier',        icon: Calendar },
   { href: '/galerie',           label: 'Galerie photos',    icon: Images },
   { href: '/bilan',             label: 'Bilan annuel',      icon: BarChart2 },

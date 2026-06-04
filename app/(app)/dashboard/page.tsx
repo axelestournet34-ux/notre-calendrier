@@ -10,8 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Heart, Calendar, Images, Plus } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { MessageDuJour } from '@/components/shared/message-du-jour'
-import { HumeurDuJour } from '@/components/shared/humeur-du-jour'
+import { WidgetAujourdhui } from '@/components/shared/widget-aujourdhui'
 import type { MoodType } from '@/features/humeurs/actions'
 
 export default async function DashboardPage() {
@@ -63,20 +62,21 @@ export default async function DashboardPage() {
   ) as { data: SouvenirAnRow[] | null }
 
   // Photo du jour
-  type SouvenirPhotoRow = { id: string; title: string; date: string; memory_photos: { storage_path: string }[] }
+  type SouvenirPhotoRow = { id: string; title: string; date: string; memory_photos: { storage_path: string; media_type: string }[] }
   const { data: souvenirsPourPhoto } = (
     couple ? await supabase.from('memories')
-      .select('id, title, date, memory_photos(storage_path)')
+      .select('id, title, date, memory_photos(storage_path, media_type)')
       .eq('couple_id', couple.id)
       .limit(50)
     : { data: [] }
   ) as { data: SouvenirPhotoRow[] | null }
 
-  const avecPhotos = (souvenirsPourPhoto ?? []).filter((m) => m.memory_photos.length > 0)
+  // On ne garde que les souvenirs ayant au moins une vraie photo (pas vidéo/audio)
+  const avecPhotos = (souvenirsPourPhoto ?? []).filter((m) => m.memory_photos.some((p) => p.media_type === 'photo'))
   const souvenirAleatoire = avecPhotos.length > 0
     ? avecPhotos[Math.floor(Math.random() * avecPhotos.length)]
     : null
-  const photoAleatoirePath = souvenirAleatoire?.memory_photos[0]?.storage_path ?? null
+  const photoAleatoirePath = souvenirAleatoire?.memory_photos.find((p) => p.media_type === 'photo')?.storage_path ?? null
   const photoAleatoireUrl = photoAleatoirePath
     ? await getR2Url(photoAleatoirePath).catch(() => null)
     : null
@@ -171,27 +171,18 @@ export default async function DashboardPage() {
           </div>
         </Card>
 
-        {/* Humeur du jour */}
+        {/* Widget de la journée : message + humeur */}
         {couple && (
-          <Card className="space-y-1">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Humeur du jour</p>
-            <HumeurDuJour monHumeur={monHumeur} humeurPartenaire={humeurPartenaire} />
-          </Card>
-        )}
-
-        {/* Message du jour */}
-        {couple && (
-          <Card className="space-y-1">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">💌 Message du jour</p>
-            <MessageDuJour
-              messagePartenaire={messagePartenaire ? {
-                id: messagePartenaire.id,
-                content: messagePartenaire.content,
-                prenomAuteur: messagePartenaire.profiles?.full_name?.split(' ')[0] ?? 'Partenaire',
-              } : null}
-              monMessage={monMessage ? { id: monMessage.id, content: monMessage.content } : null}
-            />
-          </Card>
+          <WidgetAujourdhui
+            messagePartenaire={messagePartenaire ? {
+              id: messagePartenaire.id,
+              content: messagePartenaire.content,
+              prenomAuteur: messagePartenaire.profiles?.full_name?.split(' ')[0] ?? 'Partenaire',
+            } : null}
+            monMessage={monMessage ? { id: monMessage.id, content: monMessage.content } : null}
+            monHumeur={monHumeur}
+            humeurPartenaire={humeurPartenaire}
+          />
         )}
 
         {/* Prochaine date importante */}

@@ -7,7 +7,7 @@ import {
   Home, Calendar, Heart, Images, Clock,
   List, Mail, Star, Settings, LogOut,
   BarChart2, MapPin, PenLine,
-  HelpCircle, Music
+  HelpCircle, Music, Sun
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { seDeconnecter } from '@/features/auth/actions'
@@ -16,6 +16,7 @@ import type { Profile, Couple } from '@/types/app.types'
 
 const navigation = [
   { href: '/dashboard',         label: 'Accueil',           icon: Home },
+  { href: '/aujourdhui',        label: 'Notre journée',     icon: Sun },
   { href: '/calendrier',        label: 'Calendrier',        icon: Calendar },
   { href: '/souvenirs/nouveau', label: 'Souvenirs',         icon: Heart },
   { href: '/galerie',           label: 'Galerie',           icon: Images },
