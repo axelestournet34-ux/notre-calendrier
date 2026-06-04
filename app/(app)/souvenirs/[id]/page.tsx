@@ -58,7 +58,7 @@ export default async function SouvenirPage({ params }: Props) {
   const estAuteur = souvenir.author_id === user.id
 
   // URLs signées + réactions + commentaires en parallèle
-  const [mediasAvecUrl, { data: reactionsData }, { data: commentairesData }] = await Promise.all([
+  const [mediasAvecUrl, reactionsRes, commentairesRes] = await Promise.all([
     Promise.all(
       (souvenir.memory_photos ?? [])
         .sort((a, b) => a.sort_order - b.sort_order)
@@ -69,10 +69,12 @@ export default async function SouvenirPage({ params }: Props) {
       .from('comments')
       .select('id, content, created_at, user_id, profiles(full_name)')
       .eq('memory_id', id)
-      .order('created_at', { ascending: true }) as Promise<{
-        data: { id: string; content: string; created_at: string; user_id: string; profiles: { full_name: string | null } }[] | null
-      }>,
+      .order('created_at', { ascending: true }),
   ])
+
+  const reactionsData = reactionsRes.data
+  type CommentRow = { id: string; content: string; created_at: string; user_id: string; profiles: { full_name: string | null } }
+  const commentairesData = commentairesRes.data as CommentRow[] | null
 
   const photosVideos = mediasAvecUrl.filter((m) => m.media_type !== 'audio')
   const audios = mediasAvecUrl.filter((m) => m.media_type === 'audio')

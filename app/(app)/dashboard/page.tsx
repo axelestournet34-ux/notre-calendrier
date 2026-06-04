@@ -18,18 +18,18 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/connexion')
 
-  const [{ data: profile }, { data: memberRow }] = await Promise.all([
-    supabase.from('profiles').select('full_name').eq('id', user.id).single() as Promise<{ data: { full_name: string | null } | null }>,
+  const [profileRes, memberRowRes] = await Promise.all([
+    supabase.from('profiles').select('full_name').eq('id', user.id).single(),
     supabase.from('couple_members')
       .select('couple_id, couples(id, name, start_date, cover_url)')
       .eq('user_id', user.id)
-      .single() as Promise<{
-        data: {
-          couple_id: string
-          couples: { id: string; name: string; start_date: string | null; cover_url: string | null }
-        } | null
-      }>,
+      .single(),
   ])
+  const profile = profileRes.data as { full_name: string | null } | null
+  const memberRow = memberRowRes.data as {
+    couple_id: string
+    couples: { id: string; name: string; start_date: string | null; cover_url: string | null }
+  } | null
 
   const couple = memberRow?.couples ?? null
   const now = new Date()
