@@ -10,7 +10,6 @@ import {
   Settings, X, HelpCircle, Music, Download, Archive, Sun
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
-import { seDeconnecter } from '@/features/auth/actions'
 
 const navPrincipal = [
   { href: '/dashboard',         label: 'Accueil',  icon: Home },
@@ -132,16 +131,8 @@ export function NavMobile() {
           })}
         </div>
 
-        {/* Déconnexion */}
         <div className="px-4 pb-8 border-t border-border pt-3">
-          <form action={seDeconnecter}>
-            <button
-              type="submit"
-              className="w-full py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-            >
-              Se déconnecter
-            </button>
-          </form>
+          <p className="text-center text-xs text-text-muted py-2">Mode démo ✨</p>
         </div>
       </div>
     </>

@@ -1,27 +1,24 @@
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { ArrowLeft, MapPin, Pencil, Music } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { getR2Url } from '@/lib/r2'
+import { ArrowLeft, MapPin, Music } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { Card } from '@/components/ui/card'
-import { BoutonSupprimer } from '@/components/shared/bouton-supprimer'
-import { ReactionBar } from '@/components/shared/reaction-bar'
-import { SectionCommentaires } from '@/components/shared/section-commentaires'
+import { DEMO_MEMORIES } from '@/lib/demo-data'
 
 const EMOJIS_TYPE: Record<string, string> = {
   sortie: '🎉', voyage: '✈️', repas: '🍽', anniversaire: '🎂',
   quotidien: '☀️', premiere_fois: '⭐', autre: '♡',
 }
-
 const LABELS_TYPE: Record<string, string> = {
   sortie: 'Sortie', voyage: 'Voyage', repas: 'Repas', anniversaire: 'Anniversaire',
   quotidien: 'Quotidien', premiere_fois: 'Première fois', autre: 'Autre',
 }
 
-const REACTION_TYPES = ['coeur', 'rire', 'etoile', 'nostalgie'] as const
+export function generateStaticParams() {
+  return DEMO_MEMORIES.map((m) => ({ id: m.id }))
+}
 
 interface Props {
   params: Promise<{ id: string }>
@@ -29,116 +26,24 @@ interface Props {
 
 export default async function SouvenirPage({ params }: Props) {
   const { id } = await params
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/connexion')
-
-  const { data: souvenir } = await supabase
-    .from('memories')
-    .select('*, memory_photos(*), profiles(full_name, avatar_url)')
-    .eq('id', id)
-    .single() as {
-      data: {
-        id: string
-        couple_id: string
-        author_id: string
-        date: string
-        title: string
-        note: string | null
-        type: string
-        lieu: string | null
-        citation: string | null
-        chanson_url: string | null
-        created_at: string
-        memory_photos: { id: string; storage_path: string; caption: string | null; sort_order: number; media_type: string }[]
-        profiles: { full_name: string | null; avatar_url: string | null }
-      } | null
-    }
-
+  const souvenir = DEMO_MEMORIES.find((m) => m.id === id)
   if (!souvenir) notFound()
 
-  const { data: memberRow } = await supabase
-    .from('couple_members')
-    .select('couple_id')
-    .eq('user_id', user.id)
-    .single()
-
-  if (!memberRow || memberRow.couple_id !== souvenir.couple_id) notFound()
-
-  const estAuteur = souvenir.author_id === user.id
-
-  // URLs signées pour tous les médias
-  const mediasAvecUrl = await Promise.all(
-    (souvenir.memory_photos ?? [])
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map(async (m) => {
-        const url = await getR2Url(m.storage_path).catch(() => null)
-        return { ...m, url }
-      })
-  )
-
-  const photosVideos = mediasAvecUrl.filter((m) => m.media_type !== 'audio')
-  const audios = mediasAvecUrl.filter((m) => m.media_type === 'audio')
-  const nbPhotos = photosVideos.filter((m) => m.media_type === 'photo').length
-  const nbVideos = photosVideos.filter((m) => m.media_type === 'video').length
-
-  // Réactions
-  const { data: reactionsData } = await supabase
-    .from('reactions')
-    .select('type, user_id')
-    .eq('memory_id', id)
-
-  const reactionsParType = REACTION_TYPES.map((type) => ({
-    type,
-    count: reactionsData?.filter((r) => r.type === type).length ?? 0,
-    mienne: reactionsData?.some((r) => r.type === type && r.user_id === user.id) ?? false,
-  }))
-
-  // Commentaires
-  const { data: commentairesData } = await supabase
-    .from('comments')
-    .select('id, content, created_at, user_id, profiles(full_name)')
-    .eq('memory_id', id)
-    .order('created_at', { ascending: true }) as {
-      data: { id: string; content: string; created_at: string; user_id: string; profiles: { full_name: string | null } }[] | null
-    }
-
-  const dateFormatee = format(parseISO(souvenir.date), "EEEE d MMMM yyyy", { locale: fr })
+  const dateFormatee = format(new Date(souvenir.date), "EEEE d MMMM yyyy", { locale: fr })
+  const photos = souvenir.photos.filter((p) => p.media_type !== 'audio')
 
   return (
     <>
-      <Header
-        title={souvenir.title}
-        subtitle={dateFormatee}
-        actions={
-          estAuteur ? (
-            <div className="flex items-center gap-1">
-              <Link
-                href={`/souvenirs/${id}/modifier`}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-sm font-medium text-text-soft hover:bg-surface-raised transition-colors"
-              >
-                <Pencil size={14} />
-                Modifier
-              </Link>
-              <BoutonSupprimer memoryId={id} />
-            </div>
-          ) : null
-        }
-      />
+      <Header title={souvenir.title} subtitle={dateFormatee} />
 
       <div className="px-4 lg:px-6 py-6 max-w-2xl mx-auto w-full space-y-5">
 
-        {/* Retour */}
-        <Link
-          href={`/jour/${souvenir.date}`}
-          className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
-        >
+        <Link href="/timeline"
+          className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors">
           <ArrowLeft size={14} />
-          {format(parseISO(souvenir.date), "d MMMM", { locale: fr })}
+          Retour à la timeline
         </Link>
 
-        {/* Infos */}
         <Card className="space-y-3">
           <div className="flex items-center gap-3">
             <span className="text-2xl">{EMOJIS_TYPE[souvenir.type] ?? '♡'}</span>
@@ -147,7 +52,7 @@ export default async function SouvenirPage({ params }: Props) {
                 {LABELS_TYPE[souvenir.type] ?? 'Souvenir'}
               </span>
               <p className="text-xs text-text-muted mt-1">
-                Ajouté par {souvenir.profiles?.full_name ?? 'vous'} · {format(parseISO(souvenir.created_at), "d MMM yyyy", { locale: fr })}
+                Par {souvenir.author_name} · {format(new Date(souvenir.date), "d MMM yyyy", { locale: fr })}
               </p>
             </div>
           </div>
@@ -158,8 +63,7 @@ export default async function SouvenirPage({ params }: Props) {
               <span>{souvenir.lieu}</span>
               <a
                 href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(souvenir.lieu)}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                target="_blank" rel="noopener noreferrer"
                 className="ml-auto text-xs text-primary hover:underline shrink-0"
               >
                 Voir →
@@ -182,92 +86,67 @@ export default async function SouvenirPage({ params }: Props) {
           {souvenir.chanson_url && (
             <div className="flex items-center gap-2 border-t border-border pt-3">
               <Music size={14} className="text-primary shrink-0" />
-              <a
-                href={souvenir.chanson_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline truncate"
-              >
-                {souvenir.chanson_url.includes('spotify') ? '🎵 Écouter sur Spotify' :
-                 souvenir.chanson_url.includes('youtube') || souvenir.chanson_url.includes('youtu.be') ? '▶ Écouter sur YouTube' :
-                 souvenir.chanson_url.includes('apple') ? '🎵 Écouter sur Apple Music' :
-                 'Notre chanson →'}
+              <a href={souvenir.chanson_url} target="_blank" rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline truncate">
+                {souvenir.chanson_url.includes('youtube') ? '▶ Écouter sur YouTube' : 'Notre chanson →'}
               </a>
             </div>
           )}
         </Card>
 
-        {/* Réactions */}
-        <ReactionBar memoryId={id} reactions={reactionsParType} />
+        {/* Réactions (démo) */}
+        <Card className="flex gap-4">
+          {[
+            { emoji: '❤️', label: 'coeur', count: 2 },
+            { emoji: '😂', label: 'rire', count: 1 },
+            { emoji: '⭐', label: 'etoile', count: 3 },
+            { emoji: '🥺', label: 'nostalgie', count: 1 },
+          ].map((r) => (
+            <button key={r.label}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-light text-sm font-medium text-primary">
+              <span>{r.emoji}</span>
+              <span>{r.count}</span>
+            </button>
+          ))}
+        </Card>
 
-        {/* Photos & Vidéos */}
-        {photosVideos.length > 0 && (
+        {/* Photos */}
+        {photos.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium text-text">
-              {nbPhotos > 0 && `${nbPhotos} photo${nbPhotos > 1 ? 's' : ''}`}
-              {nbPhotos > 0 && nbVideos > 0 && ' · '}
-              {nbVideos > 0 && `${nbVideos} vidéo${nbVideos > 1 ? 's' : ''}`}
-            </p>
+            <p className="text-sm font-medium text-text">{photos.length} photo{photos.length > 1 ? 's' : ''}</p>
             <div className="grid grid-cols-2 gap-2">
-              {photosVideos.map((media) =>
-                media.url ? (
-                  <div
-                    key={media.id}
-                    className="aspect-square rounded-xl overflow-hidden bg-surface-raised"
-                  >
-                    {media.media_type === 'video' ? (
-                      <video
-                        src={media.url}
-                        controls
-                        playsInline
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={media.url}
-                        alt={media.caption ?? souvenir.title}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                ) : null
-              )}
+              {photos.map((media) => (
+                <div key={media.id} className="aspect-square rounded-xl overflow-hidden bg-surface-raised">
+                  <img
+                    src={media.url}
+                    alt={media.caption ?? souvenir.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Notes vocales */}
-        {audios.length > 0 && (
-          <Card className="space-y-3">
-            <p className="text-sm font-semibold text-text">🎙 Notes vocales</p>
-            {audios.map((a, i) =>
-              a.url ? (
-                <div key={a.id} className="space-y-1">
-                  <p className="text-xs text-text-muted">Note {i + 1}</p>
-                  <audio
-                    src={a.url}
-                    controls
-                    className="w-full h-10"
-                  />
+        {/* Commentaires (démo) */}
+        <Card className="space-y-3">
+          <p className="text-sm font-semibold text-text">Commentaires</p>
+          <div className="space-y-3">
+            {[
+              { auteur: 'Emma', texte: 'Ce souvenir me fait tellement sourire ♡', date: '2024-03-01' },
+              { auteur: 'Thomas', texte: 'Un de mes préférés ♡', date: '2024-03-02' },
+            ].map((c, i) => (
+              <div key={i} className="flex gap-2">
+                <div className="size-7 rounded-full bg-primary-light flex items-center justify-center text-xs font-medium text-primary shrink-0">
+                  {c.auteur[0]}
                 </div>
-              ) : null
-            )}
-          </Card>
-        )}
-
-        {photosVideos.length === 0 && audios.length === 0 && (
-          <Card className="text-center py-8 text-text-muted text-sm">
-            Aucun média pour ce souvenir.
-          </Card>
-        )}
-
-        {/* Commentaires */}
-        <Card>
-          <SectionCommentaires
-            memoryId={id}
-            commentaires={commentairesData ?? []}
-            userId={user.id}
-          />
+                <div className="bg-surface-raised rounded-xl px-3 py-2 flex-1">
+                  <p className="text-xs font-medium text-text">{c.auteur}</p>
+                  <p className="text-sm text-text-soft">{c.texte}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
 
       </div>

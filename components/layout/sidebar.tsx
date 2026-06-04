@@ -2,15 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import {
   Home, Calendar, Heart, Images, Clock,
-  List, Mail, Star, Settings, LogOut,
+  List, Mail, Star, Settings,
   BarChart2, MapPin, PenLine,
   HelpCircle, Music, Sun
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
-import { seDeconnecter } from '@/features/auth/actions'
 import { BoutonInstaller } from '@/components/shared/pwa-install'
 import type { Profile, Couple } from '@/types/app.types'
 
@@ -37,12 +35,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ profile, couple }: SidebarProps) {
-  const rawPathname = usePathname()
-  const [pathname, setPathname] = useState('')
-
-  useEffect(() => {
-    setPathname(rawPathname)
-  }, [rawPathname])
+  const pathname = usePathname()
 
   return (
     <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-border bg-surface px-3 py-4">
@@ -107,16 +100,6 @@ export function Sidebar({ profile, couple }: SidebarProps) {
         </Link>
 
         <BoutonInstaller className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-soft hover:bg-surface-raised hover:text-text transition-all duration-150" />
-
-        <form action={seDeconnecter}>
-          <button
-            type="submit"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-soft hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition-all duration-150"
-          >
-            <LogOut size={18} className="shrink-0" />
-            Se déconnecter
-          </button>
-        </form>
 
         {/* Avatar utilisateur */}
         <div className="flex items-center gap-3 px-3 py-3 mt-2">

@@ -1,12 +1,25 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth, isToday } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameMonth, isToday, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/header'
 import { CalendrierSwipe } from './calendrier-swipe'
+import { DEMO_MEMORIES } from '@/lib/demo-data'
 import { cn } from '@/utils/cn'
+
+export function generateStaticParams() {
+  const mois = new Set(DEMO_MEMORIES.map((m) => m.date.slice(0, 7)))
+  // Add current month and a few extra
+  const now = new Date()
+  for (let i = -1; i <= 2; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
+    mois.add(format(d, 'yyyy-MM'))
+  }
+  return [...mois].map((ym) => {
+    const [annee, moisNum] = ym.split('-')
+    return { annee, mois: String(Number(moisNum)) }
+  })
+}
 
 interface Props {
   params: Promise<{ annee: string; mois: string }>
@@ -17,54 +30,27 @@ export default async function CalendrierPage({ params }: Props) {
   const anneeNum = Number(annee)
   const moisNum = Number(mois)
 
-  if (isNaN(anneeNum) || isNaN(moisNum) || moisNum < 1 || moisNum > 12) {
-    redirect('/calendrier')
-  }
-
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/connexion')
-
-  const { data: memberRow } = await supabase
-    .from('couple_members')
-    .select('couple_id')
-    .eq('user_id', user.id)
-    .single()
-
   const dateActuelle = new Date(anneeNum, moisNum - 1, 1)
   const titre = format(dateActuelle, 'MMMM yyyy', { locale: fr })
 
-  // Navigation mois précédent / suivant
   const moisPrecedent = new Date(anneeNum, moisNum - 2, 1)
   const moisSuivant = new Date(anneeNum, moisNum, 1)
   const lienPrecedent = `/calendrier/${format(moisPrecedent, 'yyyy')}/${format(moisPrecedent, 'M')}`
   const lienSuivant = `/calendrier/${format(moisSuivant, 'yyyy')}/${format(moisSuivant, 'M')}`
 
-  // Jours du mois
   const debut = startOfMonth(dateActuelle)
   const fin = endOfMonth(dateActuelle)
   const jours = eachDayOfInterval({ start: debut, end: fin })
 
-  // Décalage pour que lundi = 0
   let decalage = getDay(debut) - 1
   if (decalage < 0) decalage = 6
 
-  // Souvenirs du mois
-  type SouvenirJour = { date: string; count: number }
-  let souvenirParJour: Record<string, number> = {}
-
-  if (memberRow?.couple_id) {
-    const { data: souvenirs } = await supabase
-      .from('memories')
-      .select('date')
-      .eq('couple_id', memberRow.couple_id)
-      .gte('date', format(debut, 'yyyy-MM-dd'))
-      .lte('date', format(fin, 'yyyy-MM-dd'))
-
-    souvenirParJour = (souvenirs ?? []).reduce<Record<string, number>>((acc, s) => {
-      acc[s.date] = (acc[s.date] ?? 0) + 1
-      return acc
-    }, {})
+  // Count memories per day from demo data
+  const souvenirParJour: Record<string, number> = {}
+  for (const m of DEMO_MEMORIES) {
+    if (m.date >= format(debut, 'yyyy-MM-dd') && m.date <= format(fin, 'yyyy-MM-dd')) {
+      souvenirParJour[m.date] = (souvenirParJour[m.date] ?? 0) + 1
+    }
   }
 
   const joursSemaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
@@ -88,7 +74,6 @@ export default async function CalendrierPage({ params }: Props) {
       <CalendrierSwipe lienPrecedent={lienPrecedent} lienSuivant={lienSuivant}>
       <div className="px-4 lg:px-6 py-6 max-w-2xl mx-auto w-full space-y-4">
 
-        {/* Navigation */}
         <div className="flex items-center justify-between">
           <Link
             href={lienPrecedent}
@@ -109,9 +94,7 @@ export default async function CalendrierPage({ params }: Props) {
           </Link>
         </div>
 
-        {/* Grille */}
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-          {/* En-têtes jours */}
           <div className="grid grid-cols-7 border-b border-border">
             {joursSemaine.map((j) => (
               <div key={j} className="py-3 text-center text-xs font-medium text-text-muted">
@@ -120,9 +103,7 @@ export default async function CalendrierPage({ params }: Props) {
             ))}
           </div>
 
-          {/* Jours */}
           <div className="grid grid-cols-7">
-            {/* Cases vides au début */}
             {Array.from({ length: decalage }).map((_, i) => (
               <div key={`vide-${i}`} className="aspect-square border-b border-r border-border/50 last:border-r-0" />
             ))}
@@ -172,7 +153,6 @@ export default async function CalendrierPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Légende */}
         <div className="flex items-center gap-4 text-xs text-text-muted px-1">
           <div className="flex items-center gap-1.5">
             <div className="size-2 rounded-full bg-primary" />
