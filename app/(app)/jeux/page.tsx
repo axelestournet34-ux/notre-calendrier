@@ -24,6 +24,27 @@ const JEUX = [
     description: 'La photo se révèle peu à peu — devinez avant qu\'il soit trop tard !',
     couleur: 'from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20',
   },
+  {
+    href: '/jeux/avant-ou-apres',
+    emoji: '⏳',
+    titre: 'Avant ou après ?',
+    description: 'Deux souvenirs côte à côte — lequel est le plus ancien ?',
+    couleur: 'from-sky-50 to-blue-50 dark:from-sky-950/20 dark:to-blue-950/20',
+  },
+  {
+    href: '/jeux/vrai-ou-faux',
+    emoji: '✅',
+    titre: 'Vrai ou faux ?',
+    description: 'Des affirmations sur vos souvenirs — saison, lieu, type… vrai ou faux ?',
+    couleur: 'from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20',
+  },
+  {
+    href: '/jeux/roue',
+    emoji: '🎡',
+    titre: 'Roue des souvenirs',
+    description: 'Faites tourner la roue et retombez sur un moment de votre histoire.',
+    couleur: 'from-fuchsia-50 to-pink-50 dark:from-fuchsia-950/20 dark:to-pink-950/20',
+  },
 ]
 
 export default function JeuxPage() {
