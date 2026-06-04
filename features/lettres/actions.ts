@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { notifierPartenaire } from '@/features/notifications/notifier'
 
 const schema = z.object({
   title:   z.string().min(1).max(200),
@@ -33,6 +34,13 @@ export async function ecrireLettre(_: unknown, formData: FormData) {
   }).select('id').single()
 
   if (error || !lettre) return { error: 'Erreur lors de l\'enregistrement.' }
+
+  await notifierPartenaire({
+    coupleId: memberRow.couple_id,
+    type: 'lettre',
+    detail: donnees.data.title,
+    link: `/lettre/${lettre.id}`,
+  })
 
   revalidatePath('/lettre')
   redirect(`/lettre/${lettre.id}`)

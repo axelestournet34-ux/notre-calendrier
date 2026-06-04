@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { notifierPartenaire } from '@/features/notifications/notifier'
 
 const schema = z.object({
   content: z.string().min(1).max(500),
@@ -30,6 +31,13 @@ export async function ecrireMessage(_: unknown, formData: FormData) {
   })
 
   if (error) return { error: 'Erreur lors de l\'envoi.' }
+
+  await notifierPartenaire({
+    coupleId: memberRow.couple_id,
+    type: 'message_jour',
+    detail: donnees.data.content,
+    link: '/dashboard',
+  })
 
   revalidatePath('/dashboard')
   return null

@@ -3,6 +3,7 @@
 import { useTheme } from '@/components/providers/theme-provider'
 import { Sun, Moon, Monitor } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { NotificationBell } from '@/components/shared/notification-bell'
 
 interface HeaderProps {
   title?: string
@@ -26,6 +27,9 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
 
       <div className="flex items-center gap-2 shrink-0">
         {actions}
+
+        {/* Cloche de notifications */}
+        <NotificationBell />
 
         {/* Toggle thème */}
         <div className="flex items-center rounded-lg border border-border bg-surface p-0.5 gap-0.5">

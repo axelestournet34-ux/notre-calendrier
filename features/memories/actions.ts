@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { notifierPartenaire } from '@/features/notifications/notifier'
 import { uploadToR2, deleteFromR2, getPresignedUploadUrl, initierMultipartUpload, presignedUrlPart, completerMultipartUpload, annulerMultipartUpload } from '@/lib/r2'
 
 const souvenirSchema = z.object({
@@ -145,6 +146,13 @@ export async function ajouterSouvenir(_: unknown, formData: FormData) {
     action: 'ajout_souvenir',
     resource_type: 'memory',
     resource_id: memory.id,
+  })
+
+  await notifierPartenaire({
+    coupleId: memberRow.couple_id,
+    type: 'souvenir',
+    detail: donnees.data.titre,
+    link: `/souvenirs/${memory.id}`,
   })
 
   revalidatePath('/dashboard')

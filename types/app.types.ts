@@ -14,6 +14,7 @@ export type ImportantDate = Database['public']['Tables']['important_dates']['Row
 export type BucketListItem = Database['public']['Tables']['bucket_list_items']['Row']
 export type TimeCapsule = Database['public']['Tables']['time_capsules']['Row']
 export type ActivityLog = Database['public']['Tables']['activity_logs']['Row']
+export type Notification = Database['public']['Tables']['notifications']['Row']
 
 // ─── Types enrichis (avec relations) ───
 export type MemoryWithPhotos = Memory & {

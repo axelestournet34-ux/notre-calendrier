@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { notifierPartenaire } from '@/features/notifications/notifier'
 import type { ReactionType } from '@/types/database.types'
 
 export async function toggleReaction(memoryId: string, type: ReactionType) {
@@ -21,6 +22,17 @@ export async function toggleReaction(memoryId: string, type: ReactionType) {
     await supabase.from('reactions').delete().eq('id', existante.id)
   } else {
     await supabase.from('reactions').insert({ memory_id: memoryId, user_id: user.id, type })
+
+    const { data: memory } = await supabase
+      .from('memories').select('couple_id, title').eq('id', memoryId).single()
+    if (memory) {
+      await notifierPartenaire({
+        coupleId: memory.couple_id,
+        type: 'reaction',
+        detail: memory.title,
+        link: `/souvenirs/${memoryId}`,
+      })
+    }
   }
 
   revalidatePath(`/souvenirs/${memoryId}`)

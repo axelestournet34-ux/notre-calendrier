@@ -5,6 +5,7 @@ import { mettreAJourProfil } from './actions'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ActiverNotifications } from '@/components/shared/activer-notifications'
 
 type Profile = { id: string; full_name: string | null; avatar_url: string | null }
 
@@ -41,6 +42,9 @@ export function ProfilClient({ profile, email }: { profile: Profile | null; emai
           <Button type="submit" loading={pending}>Enregistrer</Button>
         </form>
       </Card>
+
+      {/* Notifications push */}
+      <ActiverNotifications />
     </div>
   )
 }

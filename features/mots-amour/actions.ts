@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { notifierPartenaire } from '@/features/notifications/notifier'
 import { uploadToR2, deleteFromR2 } from '@/lib/r2'
 
 const schema = z.object({
@@ -41,6 +42,13 @@ export async function ajouterMotAmour(_: unknown, formData: FormData) {
       await supabase.from('mots_amour_photos').insert({ mot_id: mot.id, storage_path: chemin, sort_order: i })
     } catch { }
   }
+
+  await notifierPartenaire({
+    coupleId: memberRow.couple_id,
+    type: 'mot_amour',
+    detail: donnees.data.content.slice(0, 140),
+    link: '/mots-amour',
+  })
 
   revalidatePath('/mots-amour')
   return null

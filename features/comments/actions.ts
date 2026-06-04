@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { notifierPartenaire } from '@/features/notifications/notifier'
 
 const commentaireSchema = z.object({
   content: z.string().min(1).max(500),
@@ -21,6 +22,17 @@ export async function ajouterCommentaire(memoryId: string, _: unknown, formData:
     user_id: user.id,
     content: donnees.data.content,
   })
+
+  const { data: memory } = await supabase
+    .from('memories').select('couple_id').eq('id', memoryId).single()
+  if (memory) {
+    await notifierPartenaire({
+      coupleId: memory.couple_id,
+      type: 'commentaire',
+      detail: donnees.data.content.slice(0, 140),
+      link: `/souvenirs/${memoryId}`,
+    })
+  }
 
   revalidatePath(`/souvenirs/${memoryId}`)
   return { success: true }
