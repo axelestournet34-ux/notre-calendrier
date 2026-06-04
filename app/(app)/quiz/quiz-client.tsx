@@ -174,7 +174,7 @@ export function QuizClient({ memories }: QuizClientProps) {
 
       <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-surface-raised shadow-md">
         <Image
-          src={question.correct.photoUrl}
+          src={question.correct.photoUrl ?? 'https://picsum.photos/id/1018/800/600'}
           alt="Photo du souvenir"
           fill
           className="object-cover"

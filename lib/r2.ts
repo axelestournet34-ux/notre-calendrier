@@ -26,6 +26,7 @@ export async function uploadToR2(path: string, file: File): Promise<void> {
 }
 
 export async function getR2Url(path: string, expiresIn = 3600): Promise<string> {
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
   return getSignedUrl(r2, new GetObjectCommand({ Bucket: BUCKET, Key: path }), { expiresIn })
 }
 
