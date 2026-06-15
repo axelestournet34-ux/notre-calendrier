@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card'
 import { BoutonSupprimer } from '@/components/shared/bouton-supprimer'
 import { ReactionBar } from '@/components/shared/reaction-bar'
 import { SectionCommentaires } from '@/components/shared/section-commentaires'
+import { SouvenirGalerie } from '@/components/shared/souvenir-galerie'
 
 const EMOJIS_TYPE: Record<string, string> = {
   sortie: '🎉', voyage: '✈️', repas: '🍽', anniversaire: '🎂',
@@ -176,19 +177,12 @@ export default async function SouvenirPage({ params }: Props) {
               {nbPhotos > 0 && nbVideos > 0 && ' · '}
               {nbVideos > 0 && `${nbVideos} vidéo${nbVideos > 1 ? 's' : ''}`}
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              {photosVideos.map((media) =>
-                media.url ? (
-                  <div key={media.id} className="aspect-square rounded-xl overflow-hidden bg-surface-raised">
-                    {media.media_type === 'video' ? (
-                      <video src={media.url} controls playsInline className="w-full h-full object-cover" />
-                    ) : (
-                      <img src={media.url} alt={media.caption ?? souvenir.title} className="w-full h-full object-cover" />
-                    )}
-                  </div>
-                ) : null
-              )}
-            </div>
+            <SouvenirGalerie
+              medias={photosVideos
+                .filter((m) => m.url)
+                .map((m) => ({ id: m.id, url: m.url as string, caption: m.caption, mediaType: m.media_type }))}
+              titre={souvenir.title}
+            />
           </div>
         )}
 
