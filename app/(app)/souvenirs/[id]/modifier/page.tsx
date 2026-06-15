@@ -16,7 +16,6 @@ export default async function ModifierSouvenirPage({ params }: Props) {
     .from('memories')
     .select('*, memory_photos(*)')
     .eq('id', id)
-    .eq('author_id', user.id)
     .single() as {
       data: {
         id: string; title: string; date: string; type: string

@@ -198,7 +198,7 @@ export async function modifierSouvenir(memoryId: string, _: unknown, formData: F
       citation:    donnees.data.citation ?? null,
       chanson_url: donnees.data.chanson_url || null,
     })
-    .eq('id', memoryId).eq('author_id', user.id)
+    .eq('id', memoryId)
 
   if (error) return { error: 'Erreur lors de la modification.' }
 
@@ -244,7 +244,7 @@ export async function supprimerSouvenir(memoryId: string) {
 
   await Promise.all((photos ?? []).map(p => deleteFromR2(p.storage_path)))
 
-  await supabase.from('memories').delete().eq('id', memoryId).eq('author_id', user.id)
+  await supabase.from('memories').delete().eq('id', memoryId)
 
   revalidatePath('/dashboard')
   revalidatePath('/timeline')

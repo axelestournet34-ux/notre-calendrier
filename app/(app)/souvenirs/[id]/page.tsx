@@ -55,8 +55,6 @@ export default async function SouvenirPage({ params }: Props) {
     .from('couple_members').select('couple_id').eq('user_id', user.id).single()
   if (!memberRow || memberRow.couple_id !== souvenir.couple_id) notFound()
 
-  const estAuteur = souvenir.author_id === user.id
-
   // URLs signées + réactions + commentaires en parallèle
   const [mediasAvecUrl, reactionsRes, commentairesRes] = await Promise.all([
     Promise.all(
@@ -95,18 +93,16 @@ export default async function SouvenirPage({ params }: Props) {
         title={souvenir.title}
         subtitle={dateFormatee}
         actions={
-          estAuteur ? (
-            <div className="flex items-center gap-1">
-              <Link
-                href={`/souvenirs/${id}/modifier`}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-sm font-medium text-text-soft hover:bg-surface-raised transition-colors"
-              >
-                <Pencil size={14} />
-                Modifier
-              </Link>
-              <BoutonSupprimer memoryId={id} />
-            </div>
-          ) : null
+          <div className="flex items-center gap-1">
+            <Link
+              href={`/souvenirs/${id}/modifier`}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-sm font-medium text-text-soft hover:bg-surface-raised transition-colors"
+            >
+              <Pencil size={14} />
+              Modifier
+            </Link>
+            <BoutonSupprimer memoryId={id} />
+          </div>
         }
       />
 
