@@ -1,5 +1,9 @@
 import webpush from 'web-push'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/types/database.types'
+
+type Client = SupabaseClient<Database>
 
 let vapidConfigure = false
 
@@ -26,14 +30,14 @@ interface PushPayload {
 }
 
 /**
- * Envoie une notification push à tous les appareils d'un utilisateur.
+ * Envoie une notification push à tous les appareils d'un utilisateur, en
+ * utilisant le client Supabase fourni (SSR côté action, ou admin côté cron).
  * Ne lève jamais : le push est secondaire. Supprime les abonnements expirés.
  */
-export async function envoyerPushAu(userId: string, payload: PushPayload): Promise<void> {
+export async function envoyerPushAvecClient(supabase: Client, userId: string, payload: PushPayload): Promise<void> {
   if (!configurerVapid()) return // push non configuré (clés VAPID absentes)
 
   try {
-    const supabase = await createClient()
     const { data: subs } = await supabase
       .from('push_subscriptions')
       .select('id, endpoint, p256dh, auth')
@@ -67,4 +71,10 @@ export async function envoyerPushAu(userId: string, payload: PushPayload): Promi
   } catch {
     // ignoré
   }
+}
+
+/** Envoie un push à un utilisateur depuis une Server Action (client SSR/RLS). */
+export async function envoyerPushAu(userId: string, payload: PushPayload): Promise<void> {
+  const supabase = await createClient()
+  await envoyerPushAvecClient(supabase, userId, payload)
 }
