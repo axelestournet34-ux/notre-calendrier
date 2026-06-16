@@ -9,8 +9,8 @@ export function GET() {
     description: 'Notre espace privé de souvenirs et de moments partagés.',
     start_url: '/dashboard',
     display: 'standalone',
-    background_color: '#faf8f5',
-    theme_color: '#faf8f5',
+    background_color: '#000000',
+    theme_color: '#000000',
     orientation: 'portrait',
     icons: [
       {
@@ -23,7 +23,7 @@ export function GET() {
         src: '/icon-512.png',
         sizes: '512x512',
         type: 'image/png',
-        purpose: 'maskable',
+        purpose: 'any',
       },
     ],
     shortcuts: [
