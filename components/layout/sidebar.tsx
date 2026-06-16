@@ -6,7 +6,7 @@ import {
   Home, Calendar, Heart, Images, Clock,
   List, Mail, Star, Settings,
   BarChart2, MapPin, PenLine,
-  Gamepad2, Music, Sun, Sparkles
+  Gamepad2, Music, Sun, Sparkles, BookOpen
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { BoutonInstaller } from '@/components/shared/pwa-install'
@@ -21,6 +21,7 @@ const navigation = [
   { href: '/timeline',          label: 'Timeline',          icon: Clock },
   { href: '/bilan',             label: 'Bilan',             icon: BarChart2 },
   { href: '/retro',             label: 'Rétro animée',      icon: Sparkles },
+  { href: '/album',             label: 'Album / PDF',       icon: BookOpen },
   { href: '/lieux',             label: 'Lieux',             icon: MapPin },
   { href: '/mots-amour',        label: 'Mots d\'amour',     icon: PenLine },
   { href: '/bucket-list',       label: 'Bucket list',       icon: List },

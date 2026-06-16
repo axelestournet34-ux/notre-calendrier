@@ -70,6 +70,7 @@ export const config = {
     '/timeline',
     '/bilan/:path*',
     '/retro',
+    '/album',
     '/lieux',
     '/mots-amour',
     '/bucket-list',

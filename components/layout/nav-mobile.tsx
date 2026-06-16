@@ -7,7 +7,7 @@ import {
   Home, Heart, Clock, MoreHorizontal,
   Calendar, Images, BarChart2,
   MapPin, PenLine, List, Star,
-  Settings, X, Gamepad2, Music, Download, Archive, Sun, Sparkles
+  Settings, X, Gamepad2, Music, Download, Archive, Sun, Sparkles, BookOpen
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
@@ -23,6 +23,7 @@ const navPlus = [
   { href: '/galerie',           label: 'Galerie photos',    icon: Images },
   { href: '/bilan',             label: 'Bilan annuel',      icon: BarChart2 },
   { href: '/retro',             label: 'Rétro animée',      icon: Sparkles },
+  { href: '/album',             label: 'Album / PDF',       icon: BookOpen },
   { href: '/mots-amour',        label: 'Mots d\'amour',     icon: PenLine },
   { href: '/lieux',             label: 'Nos lieux',         icon: MapPin },
   { href: '/bucket-list',       label: 'Bucket list',       icon: List },
