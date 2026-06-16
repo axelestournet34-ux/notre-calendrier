@@ -217,10 +217,48 @@ export async function modifierSouvenir(memoryId: string, _: unknown, formData: F
     })
   }
 
+  // Mise à jour des légendes des photos existantes
+  const legendeIds = formData.getAll('legendeId') as string[]
+  const legendeValeurs = formData.getAll('legende') as string[]
+  for (let i = 0; i < legendeIds.length; i++) {
+    if (!legendeIds[i]) continue
+    const valeur = legendeValeurs[i]?.trim()
+    await supabase.from('memory_photos')
+      .update({ caption: valeur ? valeur : null })
+      .eq('id', legendeIds[i])
+  }
+
+  const { data: mem } = await supabase
+    .from('memories').select('couple_id, title').eq('id', memoryId).single()
+  if (mem) {
+    await notifierPartenaire({
+      coupleId: mem.couple_id,
+      type: 'souvenir_modifie',
+      detail: mem.title,
+      link: `/souvenirs/${memoryId}`,
+    })
+  }
+
   revalidatePath(`/souvenirs/${memoryId}`)
   revalidatePath('/dashboard')
   revalidatePath('/timeline')
   redirect(`/souvenirs/${memoryId}`)
+}
+
+export async function definirCouverturePhoto(photoId: string, memoryId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Non connecté' }
+
+  // Place la photo avant toutes les autres (sort_order le plus bas - 1)
+  const { data: rows } = await supabase
+    .from('memory_photos').select('sort_order')
+    .eq('memory_id', memoryId).order('sort_order', { ascending: true }).limit(1)
+  const min = rows?.[0]?.sort_order ?? 0
+  await supabase.from('memory_photos').update({ sort_order: min - 1 }).eq('id', photoId)
+
+  revalidatePath(`/souvenirs/${memoryId}`)
+  return null
 }
 
 export async function supprimerPhotoSouvenir(photoId: string, storagePath: string) {

@@ -21,7 +21,7 @@ export default async function ModifierSouvenirPage({ params }: Props) {
         id: string; title: string; date: string; type: string
         note: string | null; lieu: string | null
         citation: string | null; chanson_url: string | null
-        memory_photos: { id: string; storage_path: string; media_type: string; sort_order: number }[]
+        memory_photos: { id: string; storage_path: string; media_type: string; sort_order: number; caption: string | null }[]
       } | null
     }
 
@@ -34,6 +34,7 @@ export default async function ModifierSouvenirPage({ params }: Props) {
         id: p.id,
         storagePath: p.storage_path,
         mediaType: p.media_type,
+        caption: p.caption,
         url: await getR2Url(p.storage_path).catch(() => null),
       }))
   )

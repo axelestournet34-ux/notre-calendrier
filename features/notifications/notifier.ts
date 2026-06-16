@@ -4,11 +4,13 @@ import { envoyerPushAu } from '@/features/notifications/push'
 export type NotificationType =
   | 'message_jour'
   | 'souvenir'
+  | 'souvenir_modifie'
   | 'humeur'
   | 'lettre'
   | 'mot_amour'
   | 'commentaire'
   | 'reaction'
+  | 'question'
 
 interface NotifierParams {
   /** Couple concerné (sert à retrouver le partenaire). */
@@ -22,13 +24,15 @@ interface NotifierParams {
 
 function titrePourType(type: NotificationType, prenom: string): string {
   switch (type) {
-    case 'message_jour': return `💌 ${prenom} t'a écrit un message du jour`
-    case 'souvenir':     return `📸 ${prenom} a ajouté un souvenir`
-    case 'humeur':       return `🌤️ ${prenom} a partagé son humeur`
-    case 'lettre':       return `✉️ ${prenom} t'a écrit une lettre`
-    case 'mot_amour':    return `💗 ${prenom} a déposé un mot d'amour`
-    case 'commentaire':  return `💬 ${prenom} a commenté un souvenir`
-    case 'reaction':     return `❤️ ${prenom} a réagi à un souvenir`
+    case 'message_jour':     return `💌 ${prenom} t'a écrit un message du jour`
+    case 'souvenir':         return `📸 ${prenom} a ajouté un souvenir`
+    case 'souvenir_modifie': return `✏️ ${prenom} a modifié un souvenir`
+    case 'humeur':           return `🌤️ ${prenom} a partagé son humeur`
+    case 'lettre':           return `✉️ ${prenom} t'a écrit une lettre`
+    case 'mot_amour':        return `💗 ${prenom} a déposé un mot d'amour`
+    case 'commentaire':      return `💬 ${prenom} a commenté un souvenir`
+    case 'reaction':         return `❤️ ${prenom} a réagi à un souvenir`
+    case 'question':         return `💭 ${prenom} a répondu à la question du jour`
   }
 }
 

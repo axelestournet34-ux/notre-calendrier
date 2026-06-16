@@ -560,6 +560,28 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_question_answers: {
+        Row: {
+          id: string
+          couple_id: string
+          user_id: string
+          answer: string
+          date: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          couple_id: string
+          user_id: string
+          answer: string
+          date?: string
+          created_at?: string
+        }
+        Update: {
+          answer?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

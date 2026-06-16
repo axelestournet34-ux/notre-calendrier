@@ -32,29 +32,30 @@ export function SouvenirGalerie({ medias, titre }: { medias: Media[]; titre: str
     <>
       {/* Mosaïque : médias entiers, non recadrés */}
       <div className="columns-1 sm:columns-2 gap-2">
-        {medias.map((m) =>
-          m.mediaType === 'video' ? (
-            <video
-              key={m.id}
-              src={m.url}
-              controls
-              playsInline
-              className="block w-full mb-2 rounded-xl bg-black break-inside-avoid"
-            />
-          ) : (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => ouvrir(m.id)}
-              className="block w-full mb-2 break-inside-avoid relative group rounded-xl overflow-hidden bg-surface-raised"
-            >
-              <img src={m.url} alt={m.caption ?? titre} className="w-full h-auto" />
-              <span className="absolute top-2 right-2 size-7 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                <Maximize2 size={14} />
-              </span>
-            </button>
-          )
-        )}
+        {medias.map((m) => (
+          <div key={m.id} className="mb-2 break-inside-avoid">
+            {m.mediaType === 'video' ? (
+              <video
+                src={m.url}
+                controls
+                playsInline
+                className="block w-full rounded-xl bg-black"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => ouvrir(m.id)}
+                className="block w-full relative group rounded-xl overflow-hidden bg-surface-raised"
+              >
+                <img src={m.url} alt={m.caption ?? titre} className="w-full h-auto" />
+                <span className="absolute top-2 right-2 size-7 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Maximize2 size={14} />
+                </span>
+              </button>
+            )}
+            {m.caption && <p className="mt-1 px-0.5 text-xs text-text-muted">{m.caption}</p>}
+          </div>
+        ))}
       </div>
 
       {/* Lightbox photo entière */}

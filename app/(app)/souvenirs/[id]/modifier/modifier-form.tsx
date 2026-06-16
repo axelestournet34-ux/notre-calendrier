@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useRef, useTransition } from 'react'
-import { ImagePlus, X, Film } from 'lucide-react'
-import { modifierSouvenir, obtenirUrlUpload, supprimerPhotoSouvenir } from '@/features/memories/actions'
+import { ImagePlus, X, Film, Star } from 'lucide-react'
+import { modifierSouvenir, obtenirUrlUpload, supprimerPhotoSouvenir, definirCouverturePhoto } from '@/features/memories/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/utils/cn'
@@ -18,7 +18,7 @@ const TYPES: { value: MemoryType; label: string; emoji: string }[] = [
   { value: 'autre',         label: 'Autre',         emoji: '♡' },
 ]
 
-type PhotoExistante = { id: string; storagePath: string; mediaType: string; url: string | null }
+type PhotoExistante = { id: string; storagePath: string; mediaType: string; caption: string | null; url: string | null }
 type NouveauFichier = { file: File; previewUrl: string; estVideo: boolean }
 
 interface Props {
@@ -34,6 +34,9 @@ export function ModifierForm({ souvenir, photos: photosInitiales }: Props) {
   const [typeChoisi, setTypeChoisi] = useState<MemoryType>(souvenir.type as MemoryType)
   const [photosExistantes, setPhotosExistantes] = useState(photosInitiales)
   const [nouveauxFichiers, setNouveauxFichiers] = useState<NouveauFichier[]>([])
+  const [legendes, setLegendes] = useState<Record<string, string>>(
+    () => Object.fromEntries(photosInitiales.map((p) => [p.id, p.caption ?? '']))
+  )
   const [erreur, setErreur] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -42,6 +45,11 @@ export function ModifierForm({ souvenir, photos: photosInitiales }: Props) {
   async function supprimerExistante(photo: PhotoExistante) {
     await supprimerPhotoSouvenir(photo.id, photo.storagePath)
     setPhotosExistantes(prev => prev.filter(p => p.id !== photo.id))
+  }
+
+  async function definirCouverture(photo: PhotoExistante) {
+    await definirCouverturePhoto(photo.id, souvenir.id)
+    setPhotosExistantes(prev => [photo, ...prev.filter(p => p.id !== photo.id)])
   }
 
   function ajouterFichiers(e: React.ChangeEvent<HTMLInputElement>) {
@@ -82,6 +90,12 @@ export function ModifierForm({ souvenir, photos: photosInitiales }: Props) {
           setErreur('Erreur lors de l\'upload d\'un fichier.')
           return
         }
+      }
+
+      // Légendes des photos existantes
+      for (const p of photosExistantes) {
+        formData.append('legendeId', p.id)
+        formData.append('legende', legendes[p.id] ?? '')
       }
 
       const result = await modifierSouvenir(souvenir.id, null, formData)
@@ -173,33 +187,67 @@ export function ModifierForm({ souvenir, photos: photosInitiales }: Props) {
           {totalPhotos > 0 && <span className="text-xs text-text-muted">{totalPhotos} / 50</span>}
         </div>
 
-        {(photosExistantes.length > 0 || nouveauxFichiers.length > 0) && (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {photosExistantes.map((p) => (
-              <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden bg-surface-raised group">
-                {p.mediaType === 'video' ? (
-                  <video src={p.url ?? ''} className="w-full h-full object-cover" muted playsInline />
-                ) : (
-                  <img src={p.url ?? ''} alt="" className="w-full h-full object-cover" />
+        {/* Photos existantes : légende + couverture */}
+        {photosExistantes.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {photosExistantes.map((p, idx) => (
+              <div key={p.id} className="space-y-1.5">
+                <div className="relative aspect-square rounded-xl overflow-hidden bg-surface-raised">
+                  {p.mediaType === 'video' ? (
+                    <video src={p.url ?? ''} className="w-full h-full object-cover" muted playsInline />
+                  ) : (
+                    <img src={p.url ?? ''} alt="" className="w-full h-full object-cover" />
+                  )}
+                  {idx === 0 && (
+                    <span className="absolute top-1 left-1 bg-primary text-white text-[10px] px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                      <Star size={10} className="fill-white" /> Couverture
+                    </span>
+                  )}
+                  {p.mediaType === 'video' && idx !== 0 && (
+                    <div className="absolute bottom-1 left-1 bg-black/60 rounded-md px-1.5 py-0.5 flex items-center gap-1">
+                      <Film size={10} className="text-white" />
+                      <span className="text-[10px] text-white">Vidéo</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => supprimerExistante(p)}
+                    className="absolute top-1 right-1 size-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+
+                {p.mediaType === 'photo' && (
+                  <input
+                    type="text"
+                    value={legendes[p.id] ?? ''}
+                    onChange={(e) => setLegendes(prev => ({ ...prev, [p.id]: e.target.value }))}
+                    placeholder="Légende…"
+                    maxLength={300}
+                    className="w-full rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
                 )}
-                {p.mediaType === 'video' && (
-                  <div className="absolute bottom-1 left-1 bg-black/60 rounded-md px-1.5 py-0.5 flex items-center gap-1">
-                    <Film size={10} className="text-white" />
-                    <span className="text-[10px] text-white">Vidéo</span>
-                  </div>
+
+                {idx !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => definirCouverture(p)}
+                    className="flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors"
+                  >
+                    <Star size={11} /> Définir comme couverture
+                  </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => supprimerExistante(p)}
-                  className="absolute top-1 right-1 size-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
-                >
-                  <X size={11} />
-                </button>
               </div>
             ))}
+          </div>
+        )}
 
+        {/* Nouvelles photos (légendables après enregistrement) */}
+        {nouveauxFichiers.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
             {nouveauxFichiers.map(({ previewUrl, estVideo }, i) => (
-              <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-surface-raised group ring-2 ring-primary/40">
+              <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-surface-raised ring-2 ring-primary/40">
                 {estVideo ? (
                   <video src={previewUrl} className="w-full h-full object-cover" muted playsInline />
                 ) : (

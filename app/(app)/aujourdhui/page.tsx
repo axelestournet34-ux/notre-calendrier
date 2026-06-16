@@ -4,6 +4,7 @@ import { fr } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/header'
 import { WidgetAujourdhui } from '@/components/shared/widget-aujourdhui'
+import { questionDuJour } from '@/features/questions/questions'
 import type { MoodType } from '@/features/humeurs/actions'
 
 export default async function AujourdhuiPage() {
@@ -47,6 +48,26 @@ export default async function AujourdhuiPage() {
     ? { mood: humeurPartenairRow.mood as MoodType, prenomUser: humeurPartenairRow.profiles?.full_name?.split(' ')[0] ?? 'Partenaire' }
     : null
 
+  // Question du jour
+  type ReponseRow = { user_id: string; answer: string; profiles: { full_name: string | null } }
+  const { data: reponses } = coupleId ? (await supabase
+    .from('daily_question_answers')
+    .select('user_id, answer, profiles(full_name)')
+    .eq('couple_id', coupleId)
+    .eq('date', today)) as { data: ReponseRow[] | null }
+    : { data: [] as ReponseRow[] }
+
+  const maRepRow = reponses?.find((r) => r.user_id === user.id) ?? null
+  const repPartenaireRow = reponses?.find((r) => r.user_id !== user.id) ?? null
+  const question = {
+    texte: questionDuJour(today),
+    maReponse: maRepRow?.answer ?? null,
+    // Révélée seulement si j'ai moi-même répondu
+    reponsePartenaire: maRepRow && repPartenaireRow ? repPartenaireRow.answer : null,
+    partenaireARepondu: !!repPartenaireRow,
+    prenomPartenaire: repPartenaireRow?.profiles?.full_name?.split(' ')[0] ?? 'Ton/ta partenaire',
+  }
+
   return (
     <>
       <Header
@@ -65,6 +86,7 @@ export default async function AujourdhuiPage() {
             monMessage={monMessage ? { id: monMessage.id, content: monMessage.content } : null}
             monHumeur={monHumeur}
             humeurPartenaire={humeurPartenaire}
+            question={question}
           />
         ) : (
           <p className="text-sm text-text-muted text-center py-10">

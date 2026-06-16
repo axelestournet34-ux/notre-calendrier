@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { format, addYears } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { getR2Url } from '@/lib/r2'
 import { Header } from '@/components/layout/header'
@@ -11,6 +10,7 @@ import { Heart, Calendar, Images, Plus } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { WidgetAujourdhui } from '@/components/shared/widget-aujourdhui'
+import { questionDuJour } from '@/features/questions/questions'
 import type { MoodType } from '@/features/humeurs/actions'
 
 export default async function DashboardPage() {
@@ -91,10 +91,11 @@ export default async function DashboardPage() {
     { data: MoodRow[] | null },
   ]
 
-  // Photo du jour
+  // Photo du jour — stable toute la journée (change chaque jour, pas à chaque rechargement)
   const avecPhotos = (souvenirsPourPhoto ?? []).filter((m) => m.memory_photos.some((p) => p.media_type === 'photo'))
+  const indexJour = Math.floor(now.getTime() / 86_400_000)
   const souvenirAleatoire = avecPhotos.length > 0
-    ? avecPhotos[Math.floor(Math.random() * avecPhotos.length)]
+    ? avecPhotos[indexJour % avecPhotos.length]
     : null
   const photoAleatoirePath = souvenirAleatoire?.memory_photos.find((p) => p.media_type === 'photo')?.storage_path ?? null
   const photoAleatoireUrl = photoAleatoirePath
@@ -132,6 +133,25 @@ export default async function DashboardPage() {
   const humeurPartenaire = humeurPartenairRow
     ? { mood: humeurPartenairRow.mood as MoodType, prenomUser: humeurPartenairRow.profiles?.full_name?.split(' ')[0] ?? 'Partenaire' }
     : null
+
+  // Question du jour
+  type ReponseRow = { user_id: string; answer: string; profiles: { full_name: string | null } }
+  const { data: reponsesQuestion } = couple ? (await supabase
+    .from('daily_question_answers')
+    .select('user_id, answer, profiles(full_name)')
+    .eq('couple_id', couple.id)
+    .eq('date', today)) as { data: ReponseRow[] | null }
+    : { data: [] as ReponseRow[] }
+
+  const maRepRow = reponsesQuestion?.find(r => r.user_id === user.id) ?? null
+  const repPartenaireRow = reponsesQuestion?.find(r => r.user_id !== user.id) ?? null
+  const question = {
+    texte: questionDuJour(today),
+    maReponse: maRepRow?.answer ?? null,
+    reponsePartenaire: maRepRow && repPartenaireRow ? repPartenaireRow.answer : null,
+    partenaireARepondu: !!repPartenaireRow,
+    prenomPartenaire: repPartenaireRow?.profiles?.full_name?.split(' ')[0] ?? 'Ton/ta partenaire',
+  }
 
   // Jours ensemble
   const joursEnsemble = couple?.start_date
@@ -177,6 +197,7 @@ export default async function DashboardPage() {
             monMessage={monMessage ? { id: monMessage.id, content: monMessage.content } : null}
             monHumeur={monHumeur}
             humeurPartenaire={humeurPartenaire}
+            question={question}
           />
         )}
 
