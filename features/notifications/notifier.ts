@@ -11,6 +11,8 @@ export type NotificationType =
   | 'commentaire'
   | 'reaction'
   | 'question'
+  | 'tmc_question'
+  | 'tmc_reponse'
 
 interface NotifierParams {
   /** Couple concerné (sert à retrouver le partenaire). */
@@ -33,6 +35,8 @@ function titrePourType(type: NotificationType, prenom: string): string {
     case 'commentaire':      return `💬 ${prenom} a commenté un souvenir`
     case 'reaction':         return `❤️ ${prenom} a réagi à un souvenir`
     case 'question':         return `💭 ${prenom} a répondu à la question du jour`
+    case 'tmc_question':     return `🧠 ${prenom} te défie : « Tu me connais ? »`
+    case 'tmc_reponse':      return `🧠 ${prenom} a répondu à ton défi`
   }
 }
 

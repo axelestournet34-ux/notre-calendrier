@@ -582,6 +582,52 @@ export type Database = {
         }
         Relationships: []
       }
+      tmc_questions: {
+        Row: {
+          id: string
+          couple_id: string
+          author_id: string
+          question: string
+          options: string[]
+          correct_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          couple_id: string
+          author_id: string
+          question: string
+          options: string[]
+          correct_index: number
+          created_at?: string
+        }
+        Update: {
+          question?: string
+          options?: string[]
+          correct_index?: number
+        }
+        Relationships: []
+      }
+      tmc_answers: {
+        Row: {
+          id: string
+          question_id: string
+          user_id: string
+          chosen_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          question_id: string
+          user_id: string
+          chosen_index: number
+          created_at?: string
+        }
+        Update: {
+          chosen_index?: number
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

@@ -4,6 +4,13 @@ import { Card } from '@/components/ui/card'
 
 const JEUX = [
   {
+    href: '/jeux/tu-me-connais',
+    emoji: '🧠',
+    titre: 'Tu me connais ?',
+    description: 'Pose des questions sur toi — ton/ta partenaire devine. Qui connaît le mieux l\'autre ?',
+    couleur: 'from-violet-50 to-fuchsia-50 dark:from-violet-950/20 dark:to-fuchsia-950/20',
+  },
+  {
     href: '/quiz',
     emoji: '🎴',
     titre: 'Quiz souvenirs',
@@ -54,7 +61,7 @@ export default function JeuxPage() {
 
       <div className="px-4 lg:px-6 py-6 max-w-2xl mx-auto w-full space-y-4">
         <p className="text-sm text-text-muted">
-          Tous les jeux utilisent vos vrais souvenirs.
+          Des petits jeux pour deux — la plupart à partir de vos vrais souvenirs.
         </p>
 
         <div className="space-y-3">
