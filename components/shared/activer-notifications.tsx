@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import {
   enregistrerPushSubscription,
   supprimerPushSubscription,
+  envoyerPushTest,
 } from '@/features/notifications/push-actions'
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
@@ -105,6 +106,19 @@ export function ActiverNotifications() {
     }
   }
 
+  async function tester() {
+    const res = await envoyerPushTest()
+    if ('error' in res) {
+      toast.error(res.error)
+      return
+    }
+    if (res.ok > 0) {
+      toast.success(`Test envoyé à ${res.ok} appareil(s) — tu devrais le recevoir dans quelques secondes.`)
+    } else {
+      toast.error(`Échec de l'envoi : ${res.erreurs[0] ?? 'erreur inconnue'}`)
+    }
+  }
+
   return (
     <Card className="space-y-3">
       <div className="flex items-start gap-3">
@@ -151,16 +165,21 @@ export function ActiverNotifications() {
       )}
 
       {etat === 'actif' && (
-        <div className="flex items-center justify-between gap-3 bg-surface-raised rounded-xl px-3 py-2.5">
-          <p className="text-sm text-text-soft flex items-center gap-2">
-            <BellRing size={15} className="text-primary" /> Activées sur cet appareil
-          </p>
-          <button
-            onClick={desactiver}
-            className="text-xs text-text-muted hover:text-red-500 flex items-center gap-1 transition-colors"
-          >
-            <BellOff size={13} /> Désactiver
-          </button>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3 bg-surface-raised rounded-xl px-3 py-2.5">
+            <p className="text-sm text-text-soft flex items-center gap-2">
+              <BellRing size={15} className="text-primary" /> Activées sur cet appareil
+            </p>
+            <button
+              onClick={desactiver}
+              className="text-xs text-text-muted hover:text-red-500 flex items-center gap-1 transition-colors"
+            >
+              <BellOff size={13} /> Désactiver
+            </button>
+          </div>
+          <Button onClick={tester} variant="secondary" icon={<Bell size={15} />} className="w-full">
+            M&apos;envoyer une notif de test
+          </Button>
         </div>
       )}
     </Card>
